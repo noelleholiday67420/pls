@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500&display=swap" rel="stylesheet">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         * {
             margin: 0;
@@ -1045,6 +1044,48 @@
         .post-side .icon-btn:hover { background: #EDE6DA; border-color: #CCC2B2; }
         .post-side .icon-btn.delete:hover { background: #FDE8E4; border-color: #F0C4BC; }
         .post-side .tick-btn { width: 30px; height: 30px; }
+
+        /* ===== unlock system ===== */
+        .app-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .lock-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--btn-border);
+            background: var(--btn-soft);
+            color: #5D5448;
+            font-family: "Inter", system-ui, sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 1px 1px rgba(61,53,42,0.05);
+            transition: background 0.2s, box-shadow 0.2s, transform 0.15s, color 0.2s;
+        }
+        .lock-btn:hover { background: #E4DBCB; box-shadow: var(--btn-shadow); transform: translateY(-1px); }
+        .lock-btn:active { transform: translateY(0) scale(0.97); }
+        .lock-btn:focus-visible { outline: 2px solid #B8A99A; outline-offset: 2px; }
+        .lock-btn.unlocked { background: var(--btn-accent); border-color: var(--btn-accent); color: #FFFCF7; }
+        .lock-btn.unlocked:hover { background: var(--btn-accent-hover); }
+
+        /* editing controls only exist while unlocked */
+        body:not(.unlocked) .admin-only { display: none !important; }
+
+        .modal-hint {
+            font-size: 0.82rem;
+            color: #7A7062;
+            margin: -8px 0 14px;
+            line-height: 1.45;
+        }
+        .modal-btn.danger { background: #C0392B; color: #FFFCF7; box-shadow: var(--btn-shadow); }
+        .modal-btn.danger:hover { background: #A93226; box-shadow: var(--btn-shadow-hover); }
     </style>
 </head>
 <body>
@@ -1053,8 +1094,13 @@
 
         <!-- header -->
         <header class="app-header">
-            <h1>📋 School Noticeboard</h1>
-            <p>Stay updated with announcements &amp; tasks</p>
+            <div class="app-header-text">
+                <h1>📋 School Noticeboard</h1>
+                <p>Stay updated with announcements &amp; tasks</p>
+            </div>
+            <button type="button" class="lock-btn" id="lockBtn" aria-pressed="false" title="Unlock to post, edit and delete announcements">
+                <span id="lockIcon" aria-hidden="true">🔒</span><span id="lockLabel">Unlock</span>
+            </button>
         </header>
 
         <!-- search -->
@@ -1092,7 +1138,7 @@
             <div class="right-col">
 
                 <!-- new post -->
-                <button type="button" class="new-post-btn" id="newPostBtn">
+                <button type="button" class="new-post-btn admin-only" id="newPostBtn">
                     <span aria-hidden="true">➕</span> New Post
                 </button>
 
@@ -1129,16 +1175,12 @@
         </footer>
     </div>
 
-    <!-- new post modal -->
+    <!-- new / edit post modal (only reachable when unlocked) -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <h3 id="modalTitle">📋 New Announcement</h3>
             <div class="modal-error" id="modalError"></div>
             <form id="postForm">
-                <div class="field-group">
-                    <label for="postPassword">Password</label>
-                    <input type="password" id="postPassword" autocomplete="off" required>
-                </div>
                 <div class="field-row">
                     <div class="field-group">
                         <label for="postUrgency">Urgency</label>
@@ -1165,21 +1207,6 @@
                 <div class="field-group">
                     <label for="postBody">Details</label>
                     <textarea id="postBody" required maxlength="500"></textarea>
-                </div>
-                <div class="captcha-wrap">
-                    <!--
-                        Google reCAPTCHA v2 checkbox widget.
-                        This uses Google's published TEST site key, which always
-                        validates and is meant only for development/demo use.
-                        Replace data-sitekey below with a real site key from
-                        https://www.google.com/recaptcha/admin registered to your
-                        own domain before using this for real. Note: a static
-                        HTML file has no server, so the CAPTCHA response can only
-                        be checked client-side here (a determined bot could still
-                        bypass it) — real protection requires verifying the
-                        token against Google's siteverify API from a backend.
-                    -->
-                    <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="modal-btn cancel" id="modalCancelBtn">Cancel</button>
@@ -1211,21 +1238,34 @@
         </div>
     </div>
 
-    <!-- password confirm modal (used to gate edit/delete on tasks & posts) -->
-    <div class="modal-overlay" id="pwModalOverlay">
-        <div class="modal-box small" role="dialog" aria-modal="true" aria-labelledby="pwModalTitle">
-            <h3 id="pwModalTitle">🔒 Enter Password</h3>
-            <div class="modal-error" id="pwModalError"></div>
-            <form id="pwForm">
+    <!-- unlock modal: one password unlocks posting, editing and deleting -->
+    <div class="modal-overlay" id="unlockOverlay">
+        <div class="modal-box small" role="dialog" aria-modal="true" aria-labelledby="unlockTitle">
+            <h3 id="unlockTitle">🔒 Unlock editing</h3>
+            <p class="modal-hint">Enter the teacher password to post, edit and delete announcements.</p>
+            <div class="modal-error" id="unlockError"></div>
+            <form id="unlockForm">
                 <div class="field-group">
-                    <label for="pwInput">Password</label>
-                    <input type="password" id="pwInput" autocomplete="off" required>
+                    <label for="unlockInput">Password</label>
+                    <input type="password" id="unlockInput" autocomplete="off" required>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="modal-btn cancel" id="pwModalCancelBtn">Cancel</button>
-                    <button type="submit" class="modal-btn submit" id="pwModalSubmitBtn">Confirm</button>
+                    <button type="button" class="modal-btn cancel" id="unlockCancelBtn">Cancel</button>
+                    <button type="submit" class="modal-btn submit" id="unlockSubmitBtn">Unlock</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- delete confirmation -->
+    <div class="modal-overlay" id="confirmOverlay">
+        <div class="modal-box small" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+            <h3 id="confirmTitle">🗑️ Delete post?</h3>
+            <p class="modal-hint" id="confirmText"></p>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn cancel" id="confirmNoBtn">Cancel</button>
+                <button type="button" class="modal-btn danger" id="confirmYesBtn">Delete</button>
+            </div>
         </div>
     </div>
 
@@ -1233,183 +1273,366 @@
         (async function() {
             'use strict';
 
-            // ---- posting password ----
-            const POST_PASSWORD = 'TeacherAnnouncements2026';
+            // ================= ADMIN PASSWORD =================
+            // Only a salted PBKDF2 hash is stored here — never the password itself.
+            // To change the password, paste this into your browser console (F12) on any https page,
+            // put your new password in place of NEW_PASSWORD, and copy the two lines it prints
+            // over PW_SALT and PW_HASH below:
+            //
+            // (async()=>{const pw='NEW_PASSWORD';const salt=crypto.getRandomValues(new Uint8Array(16));
+            // const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+            // const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},key,256);
+            // const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+            // console.log("const PW_SALT = '"+hex(salt)+"';\nconst PW_HASH = '"+hex(bits)+"';");})()
+            const PW_SALT = 'fcd3a28966443b5909789fa79271b7c5';
+            const PW_HASH = '89965389fbc226ad60e0696845f6062a251acca09fd6b75fb149aaebffe287d1';
+            const PW_ITER = 600000;              // makes every guess slow (~0.3–1s)
+            const UNLOCK_MS = 15 * 60 * 1000;    // auto-lock after 15 minutes
+            const FREE_TRIES = 3;                // wrong guesses before lockouts begin
 
-            // ---- announcements start empty; posts come from storage ----
+            // ---- data ----
             let announcements = [];
-
-            // tasks are fully client-side: added, edited, and deleted by the user, saved to this browser only
             let tasks = [];
 
-            // ---- storage helpers (uses browser localStorage — data stays on this device/browser only) ----
+            function esc(str) {
+                return String(str)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
+
+            // ---- premade sample content (added once on a first visit; delete freely) ----
+            function daysAgoLabel(n) {
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const d = new Date();
+                d.setDate(d.getDate() - n);
+                return `${d.getDate()} ${months[d.getMonth()]}`;
+            }
+
+            function makeSamplePosts() {
+                return [
+                    { id: 'sample1', urgency: 'URGENT', category: 'General', title: 'Early dismissal this Friday', date: daysAgoLabel(0),
+                      body: 'Due to a staff training session, school will end at 12:30 pm this Friday. Please make sure your transport or pick-up arrangements are in place.' },
+                    { id: 'sample2', urgency: 'NORMAL', category: 'Classroom', title: 'Science project due next Wednesday', date: daysAgoLabel(1),
+                      body: "Groups should submit their science project write-up and poster by next Wednesday. Bring your materials to the lab during Tuesday's lesson if you need help." },
+                    { id: 'sample3', urgency: 'NORMAL', category: 'CCA', title: 'Drama Club auditions', date: daysAgoLabel(1),
+                      body: 'Auditions for the end-of-term play are on Thursday after school in the hall. Prepare a short one-minute piece — no experience needed!' },
+                    { id: 'sample4', urgency: 'NORMAL', category: 'Classroom', title: 'Bring calculators for the Maths test', date: daysAgoLabel(2),
+                      body: 'The Maths test is on Monday. Please bring a scientific calculator, two pens, and a ruler. Sharing calculators is not allowed.' },
+                    { id: 'sample5', urgency: 'LOW', category: 'CCA', title: 'Basketball practice moved to Wednesday', date: daysAgoLabel(3),
+                      body: 'This week only, basketball practice will be on Wednesday at 3:30 pm instead of Tuesday because the court is being resurfaced.' },
+                    { id: 'sample6', urgency: 'LOW', category: 'General', title: 'New canteen menu starts Monday', date: daysAgoLabel(4),
+                      body: 'The canteen is adding vegetarian and halal-friendly options to the daily menu. Menus are posted outside the canteen entrance.' },
+                    { id: 'sample7', urgency: 'LOW', category: 'Lost & Found', title: 'Blue water bottle found', date: daysAgoLabel(5),
+                      body: 'A blue insulated water bottle was found near the science lab. Collect it from the general office and describe it to claim it.' }
+                ];
+            }
+
+            function makeSampleTasks() {
+                return [
+                    { id: 'sampletask1', title: 'Return library books', due: 'Fri', done: false },
+                    { id: 'sampletask2', title: 'Hand in permission slip', due: 'Thu', done: false },
+                    { id: 'sampletask3', title: 'Finish science worksheet', due: 'Next Wed', done: false }
+                ];
+            }
+
+            // ---- storage helpers (browser localStorage — data stays in this browser) ----
             async function loadTasks() {
                 try {
                     const raw = localStorage.getItem('client-tasks');
-                    return raw ? JSON.parse(raw) : [];
-                } catch (e) {
-                    return [];
-                }
+                    let list = raw ? JSON.parse(raw) : [];
+                    if (!localStorage.getItem('tasks-seeded-v1')) {
+                        localStorage.setItem('tasks-seeded-v1', '1');
+                        if (list.length === 0) {
+                            list = makeSampleTasks();
+                            localStorage.setItem('client-tasks', JSON.stringify(list));
+                        }
+                    }
+                    return list;
+                } catch (e) { return []; }
             }
 
             async function saveTasks(list) {
-                try {
-                    localStorage.setItem('client-tasks', JSON.stringify(list));
-                    return true;
-                } catch (e) {
-                    console.error('Failed to save tasks', e);
-                    return false;
-                }
+                try { localStorage.setItem('client-tasks', JSON.stringify(list)); return true; }
+                catch (e) { console.error('Failed to save tasks', e); return false; }
             }
 
             async function loadPostDoneState() {
                 try {
                     const raw = localStorage.getItem('post-done-state');
                     return raw ? JSON.parse(raw) : {};
-                } catch (e) {
-                    return {};
-                }
+                } catch (e) { return {}; }
             }
 
             async function savePostDoneState(state) {
-                try {
-                    localStorage.setItem('post-done-state', JSON.stringify(state));
-                } catch (e) {
-                    console.error('Failed to save post completion state', e);
-                }
+                try { localStorage.setItem('post-done-state', JSON.stringify(state)); }
+                catch (e) { console.error('Failed to save post completion state', e); }
             }
 
             async function loadPosts() {
                 try {
                     const raw = localStorage.getItem('community-posts');
-                    return raw ? JSON.parse(raw) : [];
-                } catch (e) {
-                    return [];
-                }
+                    let list = raw ? JSON.parse(raw) : [];
+                    if (!localStorage.getItem('posts-seeded-v1')) {
+                        localStorage.setItem('posts-seeded-v1', '1');
+                        if (list.length === 0) {
+                            list = makeSamplePosts();
+                            localStorage.setItem('community-posts', JSON.stringify(list));
+                        }
+                    }
+                    return list;
+                } catch (e) { return []; }
             }
 
             async function savePosts(posts) {
-                try {
-                    localStorage.setItem('community-posts', JSON.stringify(posts));
-                    return true;
-                } catch (e) {
-                    console.error('Failed to save post', e);
-                    return false;
-                }
+                try { localStorage.setItem('community-posts', JSON.stringify(posts)); return true; }
+                catch (e) { console.error('Failed to save post', e); return false; }
             }
 
-            function formatToday() {
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const d = new Date();
-                return `${d.getDate()} ${months[d.getMonth()]}`;
-            }
+            function formatToday() { return daysAgoLabel(0); }
 
             // ---- STATE ----
             let activeTab = 'all';
             let searchQuery = '';
             let postDoneState = {};
-            let editingTaskId = null;   // set while the task modal is open in edit mode
-            let editingPostId = null;   // set while the post modal is open in edit mode (password already verified)
-            let pendingAction = null;   // {type: 'edit-task'|'delete-task'|'edit-post'|'delete-post', id}
-            let openMenuEl = null;      // currently open dropdown menu
+            let editingTaskId = null;
+            let editingPostId = null;
+            let pendingDeleteId = null;
+            let afterUnlock = null;     // action to run once the user unlocks
 
             // ---- DOM refs ----
-            const feedEl = document.getElementById('feedContainer');
-            const tasksEl = document.getElementById('tasksContainer');
-            const searchInput = document.getElementById('searchInput');
-            const urgentBanner = document.getElementById('urgentBanner');
-            const urgentBannerTitle = document.getElementById('urgentBannerTitle');
+            const $ = id => document.getElementById(id);
+            const feedEl = $('feedContainer');
+            const tasksEl = $('tasksContainer');
+            const searchInput = $('searchInput');
+            const urgentBanner = $('urgentBanner');
+            const urgentBannerTitle = $('urgentBannerTitle');
             const tabBtns = document.querySelectorAll('.tab-btn');
-            const newPostBtn = document.getElementById('newPostBtn');
-            const modalOverlay = document.getElementById('modalOverlay');
-            const modalCancelBtn = document.getElementById('modalCancelBtn');
-            const modalSubmitBtn = document.getElementById('modalSubmitBtn');
-            const postForm = document.getElementById('postForm');
-            const modalError = document.getElementById('modalError');
-            const modalTitleEl = document.getElementById('modalTitle');
-            const postPasswordInput = document.getElementById('postPassword');
-            const postUrgencyInput = document.getElementById('postUrgency');
-            const postCategoryInput = document.getElementById('postCategory');
-            const postTitleInput = document.getElementById('postTitle');
-            const postBodyInput = document.getElementById('postBody');
-            const passwordFieldGroup = postPasswordInput.closest('.field-group');
-            const captchaWrap = document.querySelector('.captcha-wrap');
+            const newPostBtn = $('newPostBtn');
 
-            const addTaskBtn = document.getElementById('addTaskBtn');
-            const taskModalOverlay = document.getElementById('taskModalOverlay');
-            const taskModalTitle = document.getElementById('taskModalTitle');
-            const taskModalCancelBtn = document.getElementById('taskModalCancelBtn');
-            const taskForm = document.getElementById('taskForm');
-            const taskModalError = document.getElementById('taskModalError');
-            const taskTitleInput = document.getElementById('taskTitleInput');
-            const taskDueInput = document.getElementById('taskDueInput');
+            const lockBtn = $('lockBtn');
+            const lockIcon = $('lockIcon');
+            const lockLabel = $('lockLabel');
 
-            const pwModalOverlay = document.getElementById('pwModalOverlay');
-            const pwForm = document.getElementById('pwForm');
-            const pwInput = document.getElementById('pwInput');
-            const pwModalError = document.getElementById('pwModalError');
-            const pwModalCancelBtn = document.getElementById('pwModalCancelBtn');
+            const modalOverlay = $('modalOverlay');
+            const modalCancelBtn = $('modalCancelBtn');
+            const modalSubmitBtn = $('modalSubmitBtn');
+            const postForm = $('postForm');
+            const modalError = $('modalError');
+            const modalTitleEl = $('modalTitle');
+            const postUrgencyInput = $('postUrgency');
+            const postCategoryInput = $('postCategory');
+            const postTitleInput = $('postTitle');
+            const postBodyInput = $('postBody');
 
-            function closeAnyOpenMenu() {
-                if (openMenuEl) {
-                    openMenuEl.classList.remove('open');
-                    openMenuEl = null;
+            const addTaskBtn = $('addTaskBtn');
+            const taskModalOverlay = $('taskModalOverlay');
+            const taskModalTitle = $('taskModalTitle');
+            const taskModalCancelBtn = $('taskModalCancelBtn');
+            const taskForm = $('taskForm');
+            const taskModalError = $('taskModalError');
+            const taskTitleInput = $('taskTitleInput');
+            const taskDueInput = $('taskDueInput');
+
+            const unlockOverlay = $('unlockOverlay');
+            const unlockForm = $('unlockForm');
+            const unlockInput = $('unlockInput');
+            const unlockError = $('unlockError');
+            const unlockCancelBtn = $('unlockCancelBtn');
+            const unlockSubmitBtn = $('unlockSubmitBtn');
+
+            const confirmOverlay = $('confirmOverlay');
+            const confirmText = $('confirmText');
+            const confirmNoBtn = $('confirmNoBtn');
+            const confirmYesBtn = $('confirmYesBtn');
+
+            // =====================================================
+            //  UNLOCK / LOCK
+            // =====================================================
+            let unlockedAt = 0;
+            try { unlockedAt = parseInt(sessionStorage.getItem('nb-unlocked-at') || '0', 10) || 0; } catch (e) { /* ignore */ }
+
+            function isUnlocked() {
+                return unlockedAt > 0 && (Date.now() - unlockedAt) < UNLOCK_MS;
+            }
+
+            function setUnlocked() {
+                unlockedAt = Date.now();
+                try { sessionStorage.setItem('nb-unlocked-at', String(unlockedAt)); } catch (e) { /* ignore */ }
+            }
+
+            function lockNow() {
+                unlockedAt = 0;
+                try { sessionStorage.removeItem('nb-unlocked-at'); } catch (e) { /* ignore */ }
+                applyLockState();
+            }
+
+            function applyLockState() {
+                const u = isUnlocked();
+                document.body.classList.toggle('unlocked', u);
+                lockBtn.classList.toggle('unlocked', u);
+                lockBtn.setAttribute('aria-pressed', u ? 'true' : 'false');
+                lockIcon.textContent = u ? '🔓' : '🔒';
+                lockLabel.textContent = u ? 'Lock' : 'Unlock';
+                lockBtn.title = u ? 'Editing unlocked — tap to lock' : 'Unlock to post, edit and delete announcements';
+                if (!u) {
+                    if (modalOverlay.classList.contains('open')) closeModal();
+                    if (confirmOverlay.classList.contains('open')) closeConfirm();
                 }
             }
-            document.addEventListener('click', closeAnyOpenMenu);
 
-            function toggleMenu(e, menuEl) {
-                e.stopPropagation();
-                const wasOpen = menuEl.classList.contains('open');
-                closeAnyOpenMenu();
-                if (!wasOpen) {
-                    menuEl.classList.add('open');
-                    openMenuEl = menuEl;
-                }
+            function hexToBytes(hex) {
+                const out = new Uint8Array(hex.length / 2);
+                for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+                return out;
             }
 
-            // ---- password confirm modal (returns via pendingAction + pwForm submit) ----
-            function requestPassword(action) {
-                pendingAction = action;
-                pwForm.reset();
-                pwModalError.textContent = '';
-                pwModalError.classList.remove('show');
-                pwModalOverlay.classList.add('open');
-                pwInput.focus();
+            function bytesToHex(buf) {
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
             }
 
-            function closePwModal() {
-                pwModalOverlay.classList.remove('open');
-                pendingAction = null;
+            async function hashPassword(pw) {
+                if (!window.crypto || !window.crypto.subtle) throw new Error('no-subtle-crypto');
+                const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+                const bits = await crypto.subtle.deriveBits(
+                    { name: 'PBKDF2', salt: hexToBytes(PW_SALT), iterations: PW_ITER, hash: 'SHA-256' }, key, 256);
+                return bytesToHex(bits);
             }
 
-            pwModalCancelBtn.addEventListener('click', closePwModal);
-            pwModalOverlay.addEventListener('click', function(e) {
-                if (e.target === pwModalOverlay) closePwModal();
+            function safeEqual(a, b) {
+                if (a.length !== b.length) return false;
+                let r = 0;
+                for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+                return r === 0;
+            }
+
+            // wrong-guess counter with escalating lockouts (slows down casual guessing)
+            function getFailState() {
+                try { return JSON.parse(localStorage.getItem('nb-unlock-fails')) || { count: 0, until: 0 }; }
+                catch (e) { return { count: 0, until: 0 }; }
+            }
+            function setFailState(st) {
+                try { localStorage.setItem('nb-unlock-fails', JSON.stringify(st)); } catch (e) { /* ignore */ }
+            }
+            function fmtWait(ms) {
+                const s = Math.ceil(ms / 1000);
+                return s < 60 ? `${s} seconds` : `${Math.ceil(s / 60)} min`;
+            }
+
+            function showUnlockError(msg) {
+                unlockError.textContent = msg;
+                unlockError.classList.add('show');
+            }
+
+            function openUnlock() {
+                unlockForm.reset();
+                unlockError.textContent = '';
+                unlockError.classList.remove('show');
+                unlockOverlay.classList.add('open');
+                unlockInput.focus();
+            }
+
+            function closeUnlock() {
+                unlockOverlay.classList.remove('open');
+                afterUnlock = null;
+            }
+
+            // run fn now if unlocked, otherwise ask for the password first and then run it
+            function requireUnlock(fn) {
+                if (isUnlocked()) { fn(); return; }
+                afterUnlock = fn;
+                openUnlock();
+            }
+
+            lockBtn.addEventListener('click', function() {
+                if (isUnlocked()) lockNow(); else openUnlock();
             });
+            unlockCancelBtn.addEventListener('click', closeUnlock);
+            unlockOverlay.addEventListener('click', function(e) { if (e.target === unlockOverlay) closeUnlock(); });
 
-            pwForm.addEventListener('submit', async function(e) {
+            unlockForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                if (pwInput.value !== POST_PASSWORD) {
-                    pwModalError.textContent = 'Incorrect password.';
-                    pwModalError.classList.add('show');
-                    pwInput.focus();
+                const st = getFailState();
+                const now = Date.now();
+                if (st.until > now) {
+                    showUnlockError(`Too many wrong attempts. Try again in ${fmtWait(st.until - now)}.`);
                     return;
                 }
-                const action = pendingAction;
-                closePwModal();
-                if (!action) return;
 
-                if (action.type === 'delete-post') {
-                    announcements = announcements.filter(a => a.id !== action.id);
-                    await savePosts(announcements);
-                    refresh();
-                } else if (action.type === 'edit-post') {
-                    openPostModal(action.id);
+                unlockSubmitBtn.disabled = true;
+                unlockSubmitBtn.textContent = 'Checking…';
+                let ok = false;
+                try {
+                    ok = safeEqual(await hashPassword(unlockInput.value), PW_HASH);
+                } catch (err) {
+                    unlockSubmitBtn.disabled = false;
+                    unlockSubmitBtn.textContent = 'Unlock';
+                    showUnlockError('This browser cannot check passwords here. Open the site over https.');
+                    return;
                 }
+                unlockSubmitBtn.disabled = false;
+                unlockSubmitBtn.textContent = 'Unlock';
+
+                if (ok) {
+                    setFailState({ count: 0, until: 0 });
+                    const fn = afterUnlock;
+                    setUnlocked();
+                    unlockOverlay.classList.remove('open');
+                    afterUnlock = null;
+                    applyLockState();
+                    if (fn) fn();
+                    return;
+                }
+
+                st.count += 1;
+                unlockForm.reset();
+                if (st.count >= FREE_TRIES) {
+                    const delay = Math.min(30000 * Math.pow(2, st.count - FREE_TRIES), 15 * 60 * 1000);
+                    st.until = Date.now() + delay;
+                    showUnlockError(`Incorrect password. Locked out for ${fmtWait(delay)}.`);
+                } else {
+                    const left = FREE_TRIES - st.count;
+                    showUnlockError(`Incorrect password. ${left} ${left === 1 ? 'try' : 'tries'} left before a lockout.`);
+                }
+                setFailState(st);
+                unlockInput.focus();
             });
 
-            // ---- render tasks ----
+            // auto-lock check
+            setInterval(applyLockState, 15000);
+
+            // =====================================================
+            //  DELETE CONFIRM (posts)
+            // =====================================================
+            function askDeletePost(id) {
+                requireUnlock(function() {
+                    const post = announcements.find(a => a.id === id);
+                    if (!post) return;
+                    pendingDeleteId = id;
+                    confirmText.textContent = `Delete “${post.title}”? This can’t be undone.`;
+                    confirmOverlay.classList.add('open');
+                    confirmYesBtn.focus();
+                });
+            }
+
+            function closeConfirm() {
+                confirmOverlay.classList.remove('open');
+                pendingDeleteId = null;
+            }
+
+            confirmNoBtn.addEventListener('click', closeConfirm);
+            confirmOverlay.addEventListener('click', function(e) { if (e.target === confirmOverlay) closeConfirm(); });
+            confirmYesBtn.addEventListener('click', async function() {
+                if (!isUnlocked() || !pendingDeleteId) { closeConfirm(); return; }
+                const id = pendingDeleteId;
+                closeConfirm();
+                announcements = announcements.filter(a => a.id !== id);
+                await savePosts(announcements);
+                refresh();
+            });
+
+            // =====================================================
+            //  TASKS (personal — always editable, no password)
+            // =====================================================
             function renderTasks() {
                 if (tasks.length === 0) {
                     tasksEl.innerHTML = `<div class="task-empty">No tasks yet — tap "➕ Add" to create one.</div>`;
@@ -1420,11 +1643,11 @@
                 for (const t of tasks) {
                     const isDone = !!t.done;
                     html += `
-                    <div class="task-card ${isDone ? 'done' : ''}" data-task-id="${t.id}">
-                        <input type="checkbox" id="chk_${t.id}" ${isDone ? 'checked' : ''} aria-label="Mark '${t.title}' as ${isDone ? 'incomplete' : 'complete'}">
+                    <div class="task-card ${isDone ? 'done' : ''}" data-task-id="${esc(t.id)}">
+                        <input type="checkbox" id="chk_${esc(t.id)}" ${isDone ? 'checked' : ''} aria-label="Mark '${esc(t.title)}' as ${isDone ? 'incomplete' : 'complete'}">
                         <div class="task-info">
-                            <div class="task-title">${t.title}</div>
-                            ${t.due ? `<div class="task-due">${t.due}</div>` : ''}
+                            <div class="task-title">${esc(t.title)}</div>
+                            ${t.due ? `<div class="task-due">${esc(t.due)}</div>` : ''}
                         </div>
                         <div class="task-actions">
                             <button type="button" class="icon-btn edit-task-btn" aria-label="Edit task" title="Edit">
@@ -1438,7 +1661,6 @@
                 }
                 tasksEl.innerHTML = html;
 
-                // done checkbox
                 tasksEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                     cb.addEventListener('change', async function() {
                         const card = this.closest('.task-card');
@@ -1451,12 +1673,10 @@
                     });
                 });
 
-                // edit / delete tasks directly (no password — tasks are personal to this browser)
                 tasksEl.querySelectorAll('.edit-task-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        const id = this.closest('.task-card').dataset.taskId;
-                        openTaskModal(id);
+                        openTaskModal(this.closest('.task-card').dataset.taskId);
                     });
                 });
                 tasksEl.querySelectorAll('.delete-task-btn').forEach(btn => {
@@ -1470,7 +1690,6 @@
                 });
             }
 
-            // ---- add/edit task modal ----
             function openTaskModal(taskId = null) {
                 editingTaskId = taskId;
                 taskForm.reset();
@@ -1497,9 +1716,7 @@
 
             addTaskBtn.addEventListener('click', () => openTaskModal(null));
             taskModalCancelBtn.addEventListener('click', closeTaskModal);
-            taskModalOverlay.addEventListener('click', function(e) {
-                if (e.target === taskModalOverlay) closeTaskModal();
-            });
+            taskModalOverlay.addEventListener('click', function(e) { if (e.target === taskModalOverlay) closeTaskModal(); });
 
             taskForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -1513,10 +1730,7 @@
 
                 if (editingTaskId) {
                     const task = tasks.find(t => t.id === editingTaskId);
-                    if (task) {
-                        task.title = title;
-                        task.due = due;
-                    }
+                    if (task) { task.title = title; task.due = due; }
                 } else {
                     tasks.push({ id: 'task' + Date.now(), title, due, done: false });
                 }
@@ -1526,16 +1740,12 @@
                 renderTasks();
             });
 
-            // ---- filter logic ----
+            // =====================================================
+            //  FEED
+            // =====================================================
             function getFiltered() {
                 let list = announcements;
-
-                // tab filter
-                if (activeTab !== 'all') {
-                    list = list.filter(a => a.category === activeTab);
-                }
-
-                // search filter (case-insensitive)
+                if (activeTab !== 'all') list = list.filter(a => a.category === activeTab);
                 if (searchQuery.trim()) {
                     const q = searchQuery.trim().toLowerCase();
                     list = list.filter(a =>
@@ -1545,11 +1755,9 @@
                         a.urgency.toLowerCase().includes(q)
                     );
                 }
-
                 return list;
             }
 
-            // ---- urgent banner ----
             function updateUrgentBanner() {
                 const urgentPost = announcements.find(a => a.urgency === 'URGENT');
                 if (urgentPost) {
@@ -1562,7 +1770,6 @@
                 }
             }
 
-            // ---- render feed ----
             function renderFeed() {
                 const list = getFiltered();
                 if (list.length === 0) {
@@ -1576,23 +1783,23 @@
                         a.urgency === 'NORMAL' ? 'badge-normal' : 'badge-low';
                     const isDone = !!postDoneState[a.id];
                     html += `
-                    <div class="announce-card ${isDone ? 'completed' : ''}" data-id="${a.id}" role="button" tabindex="0" aria-expanded="false">
+                    <div class="announce-card ${isDone ? 'completed' : ''}" data-id="${esc(a.id)}" role="button" tabindex="0" aria-expanded="false">
                         <div class="card-main">
                             <div class="top">
-                                <span class="badge ${urgencyClass}">${a.urgency}</span>
-                                <span class="badge-category">${a.category}</span>
+                                <span class="badge ${urgencyClass}">${esc(a.urgency)}</span>
+                                <span class="badge-category">${esc(a.category)}</span>
                                 <span class="expand-icon" aria-hidden="true">▾</span>
                             </div>
-                            <div class="title">${a.title}</div>
-                            <div class="date">Posted ${a.date}</div>
-                            <div class="body">${a.body}</div>
+                            <div class="title">${esc(a.title)}</div>
+                            <div class="date">Posted ${esc(a.date)}</div>
+                            <div class="body">${esc(a.body)}</div>
                         </div>
                         <div class="post-side">
                             <button type="button" class="tick-btn ${isDone ? 'checked' : ''}" aria-label="Mark as ${isDone ? 'not completed' : 'completed'}" title="Mark done">✓</button>
-                            <button type="button" class="icon-btn edit-post-btn" aria-label="Edit post" title="Edit">
+                            <button type="button" class="icon-btn edit-post-btn admin-only" aria-label="Edit post" title="Edit">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                             </button>
-                            <button type="button" class="icon-btn delete delete-post-btn" aria-label="Delete post" title="Delete">
+                            <button type="button" class="icon-btn delete delete-post-btn admin-only" aria-label="Delete post" title="Delete">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
                             </button>
                         </div>
@@ -1600,14 +1807,13 @@
                 }
                 feedEl.innerHTML = html;
 
-                // attach expand toggle
                 feedEl.querySelectorAll('.announce-card').forEach(card => {
-                    card.addEventListener('click', function(e) {
+                    card.addEventListener('click', function() {
                         this.classList.toggle('open');
-                        const expanded = this.classList.contains('open');
-                        this.setAttribute('aria-expanded', expanded);
+                        this.setAttribute('aria-expanded', this.classList.contains('open'));
                     });
                     card.addEventListener('keydown', function(e) {
+                        if (e.target !== this) return;
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             this.click();
@@ -1622,11 +1828,7 @@
                         const card = this.closest('.announce-card');
                         const id = card.dataset.id;
                         const nowDone = !postDoneState[id];
-                        if (nowDone) {
-                            postDoneState[id] = true;
-                        } else {
-                            delete postDoneState[id];
-                        }
+                        if (nowDone) postDoneState[id] = true; else delete postDoneState[id];
                         await savePostDoneState(postDoneState);
                         this.classList.toggle('checked', nowDone);
                         card.classList.toggle('completed', nowDone);
@@ -1634,33 +1836,28 @@
                     });
                 });
 
-                // edit / delete (password protected)
+                // edit / delete — need to be unlocked (asks for the password once if not)
                 feedEl.querySelectorAll('.edit-post-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        closeAnyOpenMenu();
                         const id = this.closest('.announce-card').dataset.id;
-                        requestPassword({ type: 'edit-post', id });
+                        requireUnlock(() => openPostModal(id));
                     });
                 });
                 feedEl.querySelectorAll('.delete-post-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        closeAnyOpenMenu();
-                        const id = this.closest('.announce-card').dataset.id;
-                        requestPassword({ type: 'delete-post', id });
+                        askDeletePost(this.closest('.announce-card').dataset.id);
                     });
                 });
             }
 
-            // ---- full re-render ----
             function refresh() {
                 renderTasks();
                 updateUrgentBanner();
                 renderFeed();
             }
 
-            // ---- urgent banner scroll ----
             function scrollToUrgent() {
                 const targetId = urgentBanner.dataset.targetId;
                 if (!targetId) return;
@@ -1671,16 +1868,11 @@
                 urgentCard.setAttribute('aria-expanded', 'true');
                 urgentCard.classList.remove('pulse-target');
                 urgentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
                 void urgentCard.offsetWidth;
                 urgentCard.classList.add('pulse-target');
-
-                setTimeout(() => {
-                    urgentCard.classList.remove('pulse-target');
-                }, 2000);
+                setTimeout(() => urgentCard.classList.remove('pulse-target'), 2000);
             }
 
-            // ---- tab switching ----
             function setTab(tab) {
                 activeTab = tab;
                 tabBtns.forEach(btn => {
@@ -1691,7 +1883,9 @@
                 renderFeed();
             }
 
-            // ---- new post modal ----
+            // =====================================================
+            //  POST MODAL (new / edit) — only reachable when unlocked
+            // =====================================================
             function showModalError(msg) {
                 modalError.textContent = msg;
                 modalError.classList.add('show');
@@ -1702,28 +1896,16 @@
                 modalError.classList.remove('show');
             }
 
-            function resetCaptcha() {
-                if (typeof grecaptcha !== 'undefined' && grecaptcha.render) {
-                    try { grecaptcha.reset(); } catch (e) { /* not yet rendered */ }
-                }
-            }
-
-            function openModal() {
+            function openNewPostModal() {
                 editingPostId = null;
                 postForm.reset();
                 clearModalError();
-                resetCaptcha();
                 modalTitleEl.textContent = '📋 New Announcement';
                 modalSubmitBtn.textContent = 'Post';
-                passwordFieldGroup.style.display = '';
-                captchaWrap.style.display = '';
-                postPasswordInput.required = true;
                 modalOverlay.classList.add('open');
-                postPasswordInput.focus();
+                postTitleInput.focus();
             }
 
-            // opens the same modal pre-filled for editing; password was already
-            // verified via the 3-dot menu's password prompt, so it's hidden here
             function openPostModal(postId) {
                 const post = announcements.find(a => a.id === postId);
                 if (!post) return;
@@ -1732,9 +1914,6 @@
                 clearModalError();
                 modalTitleEl.textContent = '📋 Edit Announcement';
                 modalSubmitBtn.textContent = 'Save Changes';
-                passwordFieldGroup.style.display = 'none';
-                captchaWrap.style.display = 'none';
-                postPasswordInput.required = false;
                 postUrgencyInput.value = post.urgency;
                 postCategoryInput.value = post.category;
                 postTitleInput.value = post.title;
@@ -1748,28 +1927,25 @@
                 editingPostId = null;
             }
 
-            newPostBtn.addEventListener('click', openModal);
+            newPostBtn.addEventListener('click', () => requireUnlock(openNewPostModal));
             modalCancelBtn.addEventListener('click', closeModal);
-
-            modalOverlay.addEventListener('click', function(e) {
-                if (e.target === modalOverlay) closeModal();
-            });
+            modalOverlay.addEventListener('click', function(e) { if (e.target === modalOverlay) closeModal(); });
 
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && modalOverlay.classList.contains('open')) {
-                    closeModal();
-                }
+                if (e.key !== 'Escape') return;
+                if (unlockOverlay.classList.contains('open')) closeUnlock();
+                else if (confirmOverlay.classList.contains('open')) closeConfirm();
+                else if (modalOverlay.classList.contains('open')) closeModal();
+                else if (taskModalOverlay.classList.contains('open')) closeTaskModal();
             });
 
             postForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 clearModalError();
 
-                const isEditing = !!editingPostId;
-
-                if (!isEditing && postPasswordInput.value !== POST_PASSWORD) {
-                    showModalError('Incorrect password. Posts require the announcement password.');
-                    postPasswordInput.focus();
+                if (!isUnlocked()) {
+                    closeModal();
+                    requireUnlock(openNewPostModal);
                     return;
                 }
 
@@ -1780,38 +1956,22 @@
                     return;
                 }
 
-                if (!isEditing) {
-                    if (typeof grecaptcha === 'undefined') {
-                        showModalError('CAPTCHA failed to load. Check your connection and try again.');
-                        return;
-                    }
-                    const captchaResponse = grecaptcha.getResponse();
-                    if (!captchaResponse) {
-                        showModalError('Please complete the CAPTCHA.');
-                        return;
-                    }
-                }
-
+                const isEditing = !!editingPostId;
                 modalSubmitBtn.disabled = true;
                 modalSubmitBtn.textContent = isEditing ? 'Saving…' : 'Posting…';
 
                 let ok;
-                let removedForRollback = null;
-                let rollbackIndex = -1;
-
                 if (isEditing) {
                     const post = announcements.find(a => a.id === editingPostId);
+                    const backup = post ? { ...post } : null;
                     if (post) {
-                        removedForRollback = { ...post };
                         post.urgency = postUrgencyInput.value;
                         post.category = postCategoryInput.value;
                         post.title = title;
                         post.body = body;
                     }
                     ok = await savePosts(announcements);
-                    if (!ok && post && removedForRollback) {
-                        Object.assign(post, removedForRollback);
-                    }
+                    if (!ok && post && backup) Object.assign(post, backup);
                 } else {
                     const newPost = {
                         id: 'p' + Date.now(),
@@ -1819,7 +1979,7 @@
                         category: postCategoryInput.value,
                         title: title,
                         date: formatToday(),
-                        body: body,
+                        body: body
                     };
                     announcements.unshift(newPost);
                     ok = await savePosts(announcements);
@@ -1838,27 +1998,12 @@
                 refresh();
             });
 
-            // ---- event bindings ----
-            // tabs
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    setTab(this.dataset.tab);
-                });
-            });
-
-            // search
-            searchInput.addEventListener('input', function() {
-                searchQuery = this.value;
-                renderFeed();
-            });
-
-            // urgent banner
+            // ---- other bindings ----
+            tabBtns.forEach(btn => btn.addEventListener('click', function() { setTab(this.dataset.tab); }));
+            searchInput.addEventListener('input', function() { searchQuery = this.value; renderFeed(); });
             urgentBanner.addEventListener('click', scrollToUrgent);
             urgentBanner.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    scrollToUrgent();
-                }
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToUrgent(); }
             });
 
             // ---- init ----
@@ -1866,11 +2011,11 @@
                 tasks = await loadTasks();
                 postDoneState = await loadPostDoneState();
                 announcements = await loadPosts();
+                applyLockState();
                 refresh();
             }
 
             init();
-
         })();
     </script>
 
