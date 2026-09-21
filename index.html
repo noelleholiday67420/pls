@@ -1086,6 +1086,59 @@
         }
         .modal-btn.danger { background: #C0392B; color: #FFFCF7; box-shadow: var(--btn-shadow); }
         .modal-btn.danger:hover { background: #A93226; box-shadow: var(--btn-shadow-hover); }
+
+        /* ===== multi-urgent banner with dots ===== */
+        .urgent-banner.show {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            cursor: default;
+        }
+        .urgent-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        .urgent-main:focus-visible { outline: 2px solid #B8A99A; outline-offset: 4px; }
+        .urgent-text.swap, .urgent-banner .text.swap { animation: urgentSwap 0.35s ease; }
+        @keyframes urgentSwap {
+            from { opacity: 0; transform: translateY(4px); }
+            to   { opacity: 1; transform: none; }
+        }
+        .urgent-dots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+        }
+        .urgent-dots[hidden] { display: none; }
+        .urgent-dot {
+            width: 22px;
+            height: 24px;
+            padding: 0;
+            border: none;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 8px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .urgent-dot::after {
+            content: "";
+            display: block;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(139, 58, 42, 0.28);
+            transition: width 0.25s ease, background 0.25s ease;
+        }
+        .urgent-dot:hover::after { background: rgba(139, 58, 42, 0.55); }
+        .urgent-dot.active::after { width: 18px; background: #8B3A2A; }
+        .urgent-dot:focus-visible { outline: 2px solid #B8A99A; outline-offset: 1px; }
     </style>
 </head>
 <body>
@@ -1110,12 +1163,15 @@
         </div>
 
         <!-- urgent banner (shown only when an urgent post exists) -->
-        <div class="urgent-banner" id="urgentBanner" role="button" tabindex="0" aria-label="Tap to find urgent announcement">
-            <span class="icon" aria-hidden="true">🚨</span>
-            <div class="text">
-                <strong id="urgentBannerTitle"></strong> — Tap for details
-                <div class="tap-hint">scrolls to announcement</div>
+        <div class="urgent-banner" id="urgentBanner">
+            <div class="urgent-main" id="urgentMain" role="button" tabindex="0" aria-label="Tap to find urgent announcement">
+                <span class="icon" aria-hidden="true">🚨</span>
+                <div class="text" id="urgentText">
+                    <strong id="urgentBannerTitle"></strong> — Tap for details
+                    <div class="tap-hint">scrolls to announcement</div>
+                </div>
             </div>
+            <div class="urgent-dots" id="urgentDots" role="tablist" aria-label="Urgent announcements" hidden></div>
         </div>
 
         <!-- main layout wrapper -->
@@ -1406,6 +1462,9 @@
             const searchInput = $('searchInput');
             const urgentBanner = $('urgentBanner');
             const urgentBannerTitle = $('urgentBannerTitle');
+            const urgentMain = $('urgentMain');
+            const urgentText = $('urgentText');
+            const urgentDots = $('urgentDots');
             const tabBtns = document.querySelectorAll('.tab-btn');
             const newPostBtn = $('newPostBtn');
 
@@ -1758,16 +1817,70 @@
                 return list;
             }
 
+            // ---- urgent banner: cycles through every URGENT post ----
+            const URGENT_ROTATE_MS = 15000;   // auto-advance every 15 seconds
+            let urgentList = [];
+            let urgentIndex = 0;
+            let urgentTimer = null;
+
+            function showUrgent(i, animate = true) {
+                if (!urgentList.length) return;
+                urgentIndex = ((i % urgentList.length) + urgentList.length) % urgentList.length;
+                const post = urgentList[urgentIndex];
+                urgentBannerTitle.textContent = post.title;
+                urgentBanner.dataset.targetId = post.id;
+                urgentMain.setAttribute('aria-label', `Urgent: ${post.title}. Tap to find the announcement`);
+                urgentDots.querySelectorAll('.urgent-dot').forEach((dot, idx) => {
+                    const active = idx === urgentIndex;
+                    dot.classList.toggle('active', active);
+                    dot.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+                if (animate) {
+                    urgentText.classList.remove('swap');
+                    void urgentText.offsetWidth;
+                    urgentText.classList.add('swap');
+                }
+            }
+
+            function startUrgentTimer() {
+                clearInterval(urgentTimer);
+                urgentTimer = null;
+                if (urgentList.length > 1) {
+                    urgentTimer = setInterval(() => showUrgent(urgentIndex + 1), URGENT_ROTATE_MS);
+                }
+            }
+
             function updateUrgentBanner() {
-                const urgentPost = announcements.find(a => a.urgency === 'URGENT');
-                if (urgentPost) {
-                    urgentBannerTitle.textContent = urgentPost.title;
-                    urgentBanner.dataset.targetId = urgentPost.id;
-                    urgentBanner.classList.add('show');
-                } else {
+                const prev = urgentList[urgentIndex];
+                const prevId = prev ? prev.id : null;
+                urgentList = announcements.filter(a => a.urgency === 'URGENT');
+
+                if (urgentList.length === 0) {
+                    clearInterval(urgentTimer);
+                    urgentTimer = null;
+                    urgentDots.innerHTML = '';
+                    urgentDots.hidden = true;
                     urgentBanner.classList.remove('show');
                     delete urgentBanner.dataset.targetId;
+                    return;
                 }
+
+                urgentDots.innerHTML = urgentList.map((a, i) =>
+                    `<button type="button" class="urgent-dot" role="tab" data-index="${i}" aria-label="Urgent ${i + 1} of ${urgentList.length}: ${esc(a.title)}"></button>`
+                ).join('');
+                urgentDots.hidden = urgentList.length < 2;
+                urgentDots.querySelectorAll('.urgent-dot').forEach(dot => {
+                    dot.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        showUrgent(parseInt(this.dataset.index, 10));
+                        startUrgentTimer();   // manual switch restarts the 15s countdown
+                    });
+                });
+
+                urgentBanner.classList.add('show');
+                const keep = urgentList.findIndex(a => a.id === prevId);
+                showUrgent(keep >= 0 ? keep : 0, keep < 0);
+                startUrgentTimer();
             }
 
             function renderFeed() {
@@ -1861,7 +1974,14 @@
             function scrollToUrgent() {
                 const targetId = urgentBanner.dataset.targetId;
                 if (!targetId) return;
-                const urgentCard = feedEl.querySelector(`.announce-card[data-id="${targetId}"]`);
+                let urgentCard = feedEl.querySelector(`.announce-card[data-id="${targetId}"]`);
+                if (!urgentCard) {
+                    // hidden by the current tab or search — clear both so it can be shown
+                    searchInput.value = '';
+                    searchQuery = '';
+                    setTab('all');
+                    urgentCard = feedEl.querySelector(`.announce-card[data-id="${targetId}"]`);
+                }
                 if (!urgentCard) return;
 
                 urgentCard.classList.add('open');
@@ -2001,8 +2121,8 @@
             // ---- other bindings ----
             tabBtns.forEach(btn => btn.addEventListener('click', function() { setTab(this.dataset.tab); }));
             searchInput.addEventListener('input', function() { searchQuery = this.value; renderFeed(); });
-            urgentBanner.addEventListener('click', scrollToUrgent);
-            urgentBanner.addEventListener('keydown', function(e) {
+            urgentMain.addEventListener('click', scrollToUrgent);
+            urgentMain.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToUrgent(); }
             });
 
