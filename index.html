@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Noticeboard</title>
+    <title>Clarity — School Noticeboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500&display=swap" rel="stylesheet">
@@ -1139,6 +1139,252 @@
         .urgent-dot:hover::after { background: rgba(139, 58, 42, 0.55); }
         .urgent-dot.active::after { width: 18px; background: #8B3A2A; }
         .urgent-dot:focus-visible { outline: 2px solid #B8A99A; outline-offset: 1px; }
+
+        /* ===== calendar ===== */
+        [hidden] { display: none !important; }
+
+        .field-group input[type="date"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #DDD6C8;
+            border-radius: 10px;
+            background: #FAF7F2;
+            font-family: "Inter", system-ui, sans-serif;
+            font-size: 0.9rem;
+            font-weight: 300;
+            color: #3D352A;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .field-group input[type="date"]:focus { border-color: #B8A99A; background: #FFFCF7; }
+        .field-hint { font-size: 0.72rem; color: #9A9080; margin-top: 5px; line-height: 1.4; }
+        .task-due.overdue { color: #C0392B; font-weight: 400; }
+
+        .view-toggle {
+            display: inline-flex;
+            gap: 2px;
+            padding: 3px;
+            margin-bottom: 12px;
+            background: #EDE6DA;
+            border-radius: 999px;
+        }
+        .view-btn {
+            border: none;
+            background: transparent;
+            padding: 7px 16px;
+            border-radius: 999px;
+            font-family: "Inter", system-ui, sans-serif;
+            font-size: 0.82rem;
+            font-weight: 400;
+            color: #6A6052;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        .view-btn:hover { color: #3D352A; }
+        .view-btn.active { background: #FFFCF7; color: #3D352A; box-shadow: 0 1px 3px rgba(61,53,42,0.15); }
+        .view-btn:focus-visible { outline: 2px solid #B8A99A; outline-offset: 2px; }
+
+        .calendar {
+            background: #FAF7F2;
+            border: 1px solid #E5DDD0;
+            border-radius: 16px;
+            padding: 14px;
+        }
+        .cal-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+        .cal-title { flex: 1; font-size: 1.05rem; font-weight: 400; color: #3D352A; letter-spacing: -0.01em; }
+        .cal-nav, .cal-today {
+            border: 1px solid var(--btn-border);
+            background: var(--btn-soft);
+            color: #5D5448;
+            font-family: "Inter", system-ui, sans-serif;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        .cal-nav {
+            width: 32px; height: 32px; border-radius: 50%;
+            font-size: 1.2rem; line-height: 1; padding: 0 0 2px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .cal-today { border-radius: 999px; padding: 6px 13px; font-size: 0.75rem; font-weight: 500; }
+        .cal-nav:hover, .cal-today:hover { background: #E4DBCB; box-shadow: var(--btn-shadow); }
+        .cal-nav:active, .cal-today:active { transform: scale(0.94); }
+        .cal-nav:focus-visible, .cal-today:focus-visible { outline: 2px solid #B8A99A; outline-offset: 2px; }
+
+        .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+        .cal-dow {
+            text-align: center; font-size: 0.65rem; text-transform: uppercase;
+            letter-spacing: 0.04em; color: #9A9080; padding: 4px 0;
+        }
+        .cal-cell {
+            min-height: 54px;
+            padding: 6px 2px 5px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: #FFFCF7;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px;
+            font-family: "Inter", system-ui, sans-serif;
+            color: #3D352A;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, transform 0.12s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .cal-cell:hover { background: #F3ECE0; }
+        .cal-cell:active { transform: scale(0.96); }
+        .cal-cell:focus-visible { outline: 2px solid #B8A99A; outline-offset: 1px; }
+        .cal-cell.other { background: transparent; opacity: 0.45; }
+        .cal-cell.selected { background: #F3ECE0; border-color: #8F7E6A; }
+        .cal-num {
+            font-size: 0.82rem; font-weight: 400; min-width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center; border-radius: 999px;
+        }
+        .cal-cell.today .cal-num { background: #8F7E6A; color: #FFFCF7; font-weight: 500; }
+        .cal-dots { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 3px; max-width: 100%; }
+        .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
+        .dot.u { background: #C0392B; }
+        .dot.n { background: #D9A441; }
+        .dot.l { background: #A9A196; }
+        .dot.t { background: #5E8C6A; }
+        .dot.t.done { opacity: 0.35; }
+        .cal-dots .more { font-size: 0.58rem; color: #9A9080; font-weight: 500; line-height: 6px; }
+
+        .cal-legend {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 14px;
+            margin-top: 12px; font-size: 0.7rem; color: #7A7062;
+        }
+        .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+        .day-panel { margin-top: 14px; padding-top: 12px; border-top: 1px solid #E8E2D8; }
+        .day-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+        .day-head h3 { font-size: 0.95rem; font-weight: 400; color: #3D352A; }
+        .day-actions { display: flex; gap: 6px; }
+        .day-section-label {
+            font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
+            color: #9A9080; margin: 12px 0 6px;
+        }
+        .day-empty { font-size: 0.85rem; color: #B0A89A; padding: 14px 0 6px; text-align: center; }
+        .day-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            background: #FFFCF7; border: 1px solid #E5DDD0; border-radius: 12px;
+            padding: 10px 12px; margin-bottom: 8px;
+        }
+        .day-item .main { flex: 1; min-width: 0; }
+        .day-item .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+        .day-item .title { font-size: 0.9rem; font-weight: 400; color: #3D352A; line-height: 1.4; }
+        .day-item .dbody { font-size: 0.82rem; color: #5D5448; margin-top: 4px; line-height: 1.5; }
+        .day-kind { font-size: 0.65rem; color: #9A9080; margin-left: auto; }
+        .day-item.task.done { opacity: 0.55; }
+        .day-item.task.done .title { text-decoration: line-through; }
+        .item-actions { display: flex; gap: 2px; flex-shrink: 0; margin: -4px -6px 0 0; }
+        .day-check {
+            appearance: none; -webkit-appearance: none;
+            width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px;
+            border: 1.5px solid #CCC2B2; border-radius: 6px; background: #FFFCF7;
+            cursor: pointer; position: relative; transition: background 0.2s, border 0.2s;
+        }
+        .day-check:checked { background: #B8A99A; border-color: #B8A99A; }
+        .day-check:checked::after {
+            content: "✓"; position: absolute; inset: 0; display: flex;
+            align-items: center; justify-content: center; color: #FFFCF7; font-size: 0.7rem; font-weight: 500;
+        }
+        .day-check:focus-visible { outline: 2px solid #B8A99A; outline-offset: 2px; }
+
+        @media (max-width: 420px) {
+            .calendar { padding: 10px; }
+            .cal-grid { gap: 3px; }
+            .cal-cell { min-height: 48px; }
+        }
+
+        /* ===== subcategory dropdowns ===== */
+        .sub-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: -2px 0 14px;
+        }
+        .sub-filter {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1 1 130px;
+            max-width: 220px;
+        }
+        .sub-filter span {
+            font-size: 0.65rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9A9080;
+            padding-left: 4px;
+        }
+        .sub-filter select,
+        .field-group select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%239A9080' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+        .sub-filter select {
+            width: 100%;
+            padding: 9px 32px 9px 12px;
+            border: 1px solid var(--btn-border);
+            border-radius: 12px;
+            background-color: #FAF7F2;
+            font-family: "Inter", system-ui, sans-serif;
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: #3D352A;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 1px 1px rgba(61,53,42,0.04);
+            transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+        }
+        .sub-filter select:hover { background-color: #F3ECE0; border-color: #CCC2B2; }
+        .sub-filter select:focus-visible { border-color: #8F7E6A; box-shadow: 0 0 0 3px rgba(143,126,106,0.18); }
+        .sub-filter-note { flex-basis: 100%; font-size: 0.72rem; color: #9A9080; padding-left: 4px; }
+        .badge-sub {
+            font-size: 0.6rem;
+            font-weight: 400;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: #F3ECE0;
+            color: #7A6A57;
+            border: 1px solid #E5DDD0;
+        }
+
+        /* ===== tasks: their own scroll area ===== */
+        .task-count { font-weight: 500; color: #B0A89A; margin-left: 4px; }
+
+        .tasks-section .tasks-scroll {
+            flex-direction: column;
+            flex-wrap: nowrap;
+            overflow-x: hidden;
+            overflow-y: auto;
+            max-height: min(340px, 50vh);        /* phones / tablets */
+            padding: 2px 6px 6px 0;
+            overscroll-behavior: contain;         /* scrolling the list never drags the page */
+            scrollbar-width: thin;
+            scrollbar-color: #CCC2B2 transparent;
+        }
+        .tasks-section .tasks-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .tasks-section .tasks-scroll::-webkit-scrollbar-track { background: transparent; }
+        .tasks-section .tasks-scroll::-webkit-scrollbar-thumb { background: #CCC2B2; border-radius: 8px; }
+        .tasks-section .tasks-scroll::-webkit-scrollbar-thumb:hover { background: #B8A99A; }
+        .tasks-section .tasks-scroll .task-card {
+            flex: 0 0 auto;
+            width: 100%;
+            min-width: 0;
+        }
+        #subClassHint { margin: -8px 0 14px; }
+        .add-task-btn { white-space: nowrap; flex-shrink: 0; }
+        .tasks-section .section-head { gap: 8px; }
+        .tasks-section .section-head h2 { white-space: nowrap; }
+        @media (min-width: 800px) {
+            /* the column is pinned while you scroll the page, so it must fit inside the window */
+            .tasks-section .tasks-scroll { max-height: min(420px, calc(100vh - 150px)); }
+            .layout-flex .left-col { flex: 0 0 250px; }
+        }
     </style>
 </head>
 <body>
@@ -1148,8 +1394,8 @@
         <!-- header -->
         <header class="app-header">
             <div class="app-header-text">
-                <h1>📋 School Noticeboard</h1>
-                <p>Stay updated with announcements &amp; tasks</p>
+                <h1>📋 Clarity</h1>
+                <p>Your school noticeboard — announcements &amp; tasks, all in one place</p>
             </div>
             <button type="button" class="lock-btn" id="lockBtn" aria-pressed="false" title="Unlock to post, edit and delete announcements">
                 <span id="lockIcon" aria-hidden="true">🔒</span><span id="lockLabel">Unlock</span>
@@ -1181,7 +1427,7 @@
             <div class="left-col">
                 <section class="tasks-section" aria-label="Pending tasks">
                     <div class="section-head">
-                        <h2>📌 Pending Tasks</h2>
+                        <h2>📌 Pending Tasks <span class="task-count" id="taskCount"></span></h2>
                         <button type="button" class="add-task-btn" id="addTaskBtn">➕ Add</button>
                     </div>
                     <div class="tasks-scroll" id="tasksContainer">
@@ -1197,6 +1443,12 @@
                 <button type="button" class="new-post-btn admin-only" id="newPostBtn">
                     <span aria-hidden="true">➕</span> New Post
                 </button>
+
+                <!-- view switch -->
+                <div class="view-toggle" role="tablist" aria-label="Choose view">
+                    <button type="button" class="view-btn active" id="viewListBtn" role="tab" aria-selected="true">☰ List</button>
+                    <button type="button" class="view-btn" id="viewCalBtn" role="tab" aria-selected="false">📅 Calendar</button>
+                </div>
 
                 <!-- tabs -->
                 <nav class="tabs" role="tablist" aria-label="Filter announcements">
@@ -1217,10 +1469,45 @@
                     </button>
                 </nav>
 
+                <!-- subcategory dropdowns (CCA tab: CCA | Classroom tab: Level + Class) -->
+                <div class="sub-filters" id="subFilters" hidden>
+                    <label class="sub-filter" id="ccaFilterWrap" hidden>
+                        <span>CCA</span>
+                        <select id="ccaFilterSel" aria-label="Filter by CCA"></select>
+                    </label>
+                    <label class="sub-filter" id="levelFilterWrap" hidden>
+                        <span>Level</span>
+                        <select id="levelFilterSel" aria-label="Filter by level"></select>
+                    </label>
+                    <label class="sub-filter" id="classFilterWrap" hidden>
+                        <span>Class</span>
+                        <select id="classFilterSel" aria-label="Filter by class"></select>
+                    </label>
+                    <div class="sub-filter-note" id="subFilterNote" hidden>Also showing posts meant for everyone in this category.</div>
+                </div>
+
                 <!-- feed -->
                 <div class="feed" id="feedContainer" role="region" aria-label="Announcements feed">
                     <div class="loading-note">Loading announcements…</div>
                 </div>
+
+                <!-- calendar view -->
+                <section class="calendar" id="calendarView" aria-label="Calendar" hidden>
+                    <div class="cal-head">
+                        <div class="cal-title" id="calTitle" aria-live="polite"></div>
+                        <button type="button" class="cal-today" id="calToday">Today</button>
+                        <button type="button" class="cal-nav" id="calPrev" aria-label="Previous month">‹</button>
+                        <button type="button" class="cal-nav" id="calNext" aria-label="Next month">›</button>
+                    </div>
+                    <div class="cal-grid" id="calGrid"></div>
+                    <div class="cal-legend">
+                        <span><i class="dot u"></i>Urgent</span>
+                        <span><i class="dot n"></i>Normal</span>
+                        <span><i class="dot l"></i>Low</span>
+                        <span><i class="dot t"></i>Task</span>
+                    </div>
+                    <div class="day-panel" id="dayPanel"></div>
+                </section>
 
             </div>
         </div>
@@ -1256,6 +1543,21 @@
                         </select>
                     </div>
                 </div>
+                <div class="field-group" id="subCcaRow" hidden>
+                    <label for="postCca">CCA</label>
+                    <select id="postCca"></select>
+                </div>
+                <div class="field-row" id="subClassroomRow" hidden>
+                    <div class="field-group">
+                        <label for="postLevel">Level</label>
+                        <select id="postLevel"></select>
+                    </div>
+                    <div class="field-group">
+                        <label for="postClass">Class</label>
+                        <select id="postClass"></select>
+                    </div>
+                </div>
+                <div class="field-hint" id="subClassHint" hidden></div>
                 <div class="field-group">
                     <label for="postTitle">Title</label>
                     <input type="text" id="postTitle" required maxlength="120">
@@ -1263,6 +1565,11 @@
                 <div class="field-group">
                     <label for="postBody">Details</label>
                     <textarea id="postBody" required maxlength="500"></textarea>
+                </div>
+                <div class="field-group">
+                    <label for="postEventDate">Event / deadline date (optional)</label>
+                    <input type="date" id="postEventDate">
+                    <div class="field-hint">Puts this on the calendar on that day. Leave blank to show it on the day it was posted.</div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="modal-btn cancel" id="modalCancelBtn">Cancel</button>
@@ -1283,8 +1590,8 @@
                     <input type="text" id="taskTitleInput" required maxlength="120">
                 </div>
                 <div class="field-group">
-                    <label for="taskDueInput">Due (optional)</label>
-                    <input type="text" id="taskDueInput" placeholder="e.g. 5 Sep" maxlength="40">
+                    <label for="taskDueInput">Due date (optional)</label>
+                    <input type="date" id="taskDueInput">
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="modal-btn cancel" id="taskModalCancelBtn">Cancel</button>
@@ -1356,39 +1663,214 @@
                     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
             }
 
-            // ---- premade sample content (added once on a first visit; delete freely) ----
-            function daysAgoLabel(n) {
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const d = new Date();
-                d.setDate(d.getDate() - n);
-                return `${d.getDate()} ${months[d.getMonth()]}`;
+            // ---- subcategories (edit these lists to add more options) ----
+            const CCA_OPTIONS = ['Soccer', 'Track', 'Badminton', 'Table Tennis', 'Dance', 'Orchestra', 'Robotics'];
+            const LEVEL_OPTIONS = ['1', '2', '3', '4', '5', '6'];
+            const CLASS_OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+            function fillSelect(sel, allLabel, values, labelFn) {
+                sel.innerHTML = `<option value="">${esc(allLabel)}</option>` +
+                    values.map(v => `<option value="${esc(v)}">${esc(labelFn ? labelFn(v) : v)}</option>`).join('');
             }
 
+            // chips shown on a post: the CCA, and the class as a code — Level 6 + Class C shows as "6C"
+            function classCode(a) { return a.level && a.cls ? a.level + a.cls : ''; }
+            function subLabels(a) {
+                const out = [];
+                if (a.cca) out.push(a.cca);
+                if (a.level && a.cls) out.push(a.level + a.cls);
+                else if (a.level) out.push('Level ' + a.level);
+                else if (a.cls) out.push('Class ' + a.cls);
+                return out;
+            }
+            function subSearchText(a) {
+                return subLabels(a).concat([a.level ? 'level ' + a.level : '', a.cls ? 'class ' + a.cls : '']).join(' ').toLowerCase();
+            }
+            function classDescription(level, cls) {
+                if (level && cls) return `Shows as ${level}${cls} (Level ${level}, Class ${cls} only)`;
+                if (level) return `Shows as Level ${level} (all classes)`;
+                if (cls) return `Shows as Class ${cls} (all levels)`;
+                return 'For every level and class';
+            }
+
+            // ---- date helpers (all local time, dates stored as YYYY-MM-DD) ----
+            const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            const WD_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            function toISO(d) {
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            }
+            function fromISO(str) {
+                const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str || '');
+                return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+            }
+            function startOfToday() {
+                const t = new Date();
+                return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+            }
+            function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+            function nextWeekday(wd, minAhead) {
+                let d = addDays(startOfToday(), minAhead);
+                while (d.getDay() !== wd) d = addDays(d, 1);
+                return d;
+            }
+            function fmtShort(iso) { const d = fromISO(iso); return d ? `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}` : ''; }
+            function fmtDue(iso) { const d = fromISO(iso); return d ? `${WD_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}` : ''; }
+            function fmtLong(iso) { const d = fromISO(iso); return d ? `${WD_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}` : ''; }
+
+            // ---- premade sample content (added once on a first visit; delete freely) ----
+            function daysAgoLabel(n) {
+                const d = addDays(startOfToday(), -n);
+                return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+            }
+            function daysAgoISO(n) { return toISO(addDays(startOfToday(), -n)); }
+
+            function inDays(n) { return toISO(addDays(startOfToday(), n)); }
+
+            // a realistic starter board: 20 announcements across every category (2 urgent) and 9 tasks
             function makeSamplePosts() {
+                // P(id, urgency, category, title, posted N days ago, event day (offset / ISO / null), details, subcategory)
+                const P = (id, urgency, category, title, ago, ev, body, sub) => Object.assign({
+                    id, urgency, category, title, body, cca: '', level: '', cls: '',
+                    date: daysAgoLabel(ago), dateISO: daysAgoISO(ago),
+                    eventDate: ev === null ? '' : (typeof ev === 'number' ? inDays(ev) : ev)
+                }, sub || {});
+                const fri = toISO(nextWeekday(5, 0));
                 return [
-                    { id: 'sample1', urgency: 'URGENT', category: 'General', title: 'Early dismissal this Friday', date: daysAgoLabel(0),
-                      body: 'Due to a staff training session, school will end at 12:30 pm this Friday. Please make sure your transport or pick-up arrangements are in place.' },
-                    { id: 'sample2', urgency: 'NORMAL', category: 'Classroom', title: 'Science project due next Wednesday', date: daysAgoLabel(1),
-                      body: "Groups should submit their science project write-up and poster by next Wednesday. Bring your materials to the lab during Tuesday's lesson if you need help." },
-                    { id: 'sample3', urgency: 'NORMAL', category: 'CCA', title: 'Drama Club auditions', date: daysAgoLabel(1),
-                      body: 'Auditions for the end-of-term play are on Thursday after school in the hall. Prepare a short one-minute piece — no experience needed!' },
-                    { id: 'sample4', urgency: 'NORMAL', category: 'Classroom', title: 'Bring calculators for the Maths test', date: daysAgoLabel(2),
-                      body: 'The Maths test is on Monday. Please bring a scientific calculator, two pens, and a ruler. Sharing calculators is not allowed.' },
-                    { id: 'sample5', urgency: 'LOW', category: 'CCA', title: 'Basketball practice moved to Wednesday', date: daysAgoLabel(3),
-                      body: 'This week only, basketball practice will be on Wednesday at 3:30 pm instead of Tuesday because the court is being resurfaced.' },
-                    { id: 'sample6', urgency: 'LOW', category: 'General', title: 'New canteen menu starts Monday', date: daysAgoLabel(4),
-                      body: 'The canteen is adding vegetarian and halal-friendly options to the daily menu. Menus are posted outside the canteen entrance.' },
-                    { id: 'sample7', urgency: 'LOW', category: 'Lost & Found', title: 'Blue water bottle found', date: daysAgoLabel(5),
-                      body: 'A blue insulated water bottle was found near the science lab. Collect it from the general office and describe it to claim it.' }
+                    P('demo-p1', 'URGENT', 'General', 'Haze advisory: outdoor activities moved indoors', 0, 0,
+                      'The air quality has reached the unhealthy range this morning. All PE lessons, recess sports and outdoor CCAs today will be held indoors. Students who feel unwell should tell their teacher and go to the general office.'),
+                    P('demo-p2', 'URGENT', 'General', 'Early dismissal this Friday', 0, fri,
+                      'Due to a staff training session, school will end at 12:30 pm this Friday. Please make sure your transport or pick-up arrangements are in place.'),
+                    P('demo-p3', 'NORMAL', 'Classroom', 'English oral exams: check your timetable', 0, 4,
+                      'Oral exam timetables are on the class notice board. Arrive at the exam room 10 minutes before your slot and bring your student card.', { level: '4' }),
+                    P('demo-p4', 'NORMAL', 'Classroom', 'Physics practical moved to Lab 2', 0, 1,
+                      "Tomorrow's Physics practical for this class is in Lab 2 instead of Lab 1. Bring your lab coat, safety goggles and practical workbook.", { level: '6', cls: 'C' }),
+                    P('demo-p5', 'NORMAL', 'CCA', 'Robotics: bring your laptops', 1, 2,
+                      "This week's session covers programming the line-following robots. Please bring a charged laptop and charger; spare laptops are limited.", { cca: 'Robotics' }),
+                    P('demo-p6', 'NORMAL', 'Classroom', 'Science project due next Wednesday', 1, toISO(nextWeekday(3, 2)),
+                      "Groups should submit their science project write-up and poster by next Wednesday. Bring your materials to the lab during Tuesday's lesson if you need help.", { level: '2' }),
+                    P('demo-p7', 'NORMAL', 'CCA', 'Dance showcase auditions', 1, toISO(nextWeekday(4, 1)),
+                      'Auditions for the end-of-term showcase are on Thursday after school in the hall. Prepare a short one-minute routine — no experience needed!', { cca: 'Dance' }),
+                    P('demo-p8', 'NORMAL', 'CCA', 'Track training moved to the indoor hall', 1, 1,
+                      'While the haze advisory is in effect, track training will be held in the indoor hall. Bring a change of clothes and a water bottle.', { cca: 'Track' }),
+                    P('demo-p9', 'NORMAL', 'General', 'Parent-Teacher Meeting sign-ups now open', 2, 9,
+                      'Sign up for a 15-minute slot at the general office or through your form teacher. Slots are first come, first served and close two days before the meeting.'),
+                    P('demo-p10', 'NORMAL', 'Classroom', 'Bring calculators for the Maths test', 2, toISO(nextWeekday(1, 1)),
+                      'The Maths test is on Monday. Please bring a scientific calculator, two pens and a ruler. Sharing calculators is not allowed.', { level: '3', cls: 'A' }),
+                    P('demo-p11', 'NORMAL', 'CCA', 'Badminton inter-school team trials', 2, 3,
+                      'Trials are on Friday after school in the hall. Bring your racket, non-marking shoes and a water bottle. Selected players will be told by the end of next week.', { cca: 'Badminton' }),
+                    P('demo-p12', 'NORMAL', 'Lost & Found', 'Lost: black scientific calculator', 2, null,
+                      'A black Casio scientific calculator was lost near Room 3-04 last Friday. If you found it, please hand it in to the general office.'),
+                    P('demo-p13', 'LOW', 'CCA', 'Soccer practice moved to Wednesday', 3, toISO(nextWeekday(3, 1)),
+                      'This week only, soccer practice will be on Wednesday at 3:30 pm instead of Tuesday because the field is being resurfaced.', { cca: 'Soccer' }),
+                    P('demo-p14', 'NORMAL', 'General', 'School photo day', 3, 6,
+                      'Class photos will be taken in the hall by class order. Come in full, neat school uniform and bring your student card.'),
+                    P('demo-p15', 'NORMAL', 'CCA', 'Table Tennis friendly match', 3, 7,
+                      'Our team hosts a friendly match against a neighbouring school at 3:30 pm in the hall. Team members should arrive by 3:00 pm. Supporters are welcome.', { cca: 'Table Tennis' }),
+                    P('demo-p16', 'NORMAL', 'Classroom', 'Economics group presentations', 3, 5,
+                      'Each group has 8 minutes to present, followed by 2 minutes of questions. Slides must be emailed to your teacher the night before.', { level: '5', cls: 'B' }),
+                    P('demo-p17', 'NORMAL', 'CCA', 'Soccer inter-class tournament sign-up', 4, 8,
+                      'Register with your form captain by the end of the week. Beginners are welcome, and bibs and balls will be provided.', { cca: 'Soccer' }),
+                    P('demo-p18', 'LOW', 'General', 'New canteen menu starts Monday', 4, toISO(nextWeekday(1, 1)),
+                      'The canteen is adding vegetarian and halal-friendly options to the daily menu. Menus are posted outside the canteen entrance.'),
+                    P('demo-p19', 'NORMAL', 'Classroom', 'History field trip: return permission slips', 4, 3,
+                      'Signed permission slips for the museum trip must be handed to your History teacher. Students without a slip cannot join the trip.', { level: '1', cls: 'C' }),
+                    P('demo-p20', 'LOW', 'CCA', 'Dance rehearsal for Prize Giving', 4, 5,
+                      'Full dance rehearsal in the hall after school. Please wear your CCA t-shirt and bring a water bottle.', { cca: 'Dance' }),
+                    P('demo-p21', 'LOW', 'CCA', 'Orchestra sectional rehearsals', 4, 4,
+                      'Strings rehearse in the music room and winds in the band room. Bring your instrument, music stand and the new concert pieces.', { cca: 'Orchestra' }),
+                    P('demo-p22', 'NORMAL', 'General', 'Term 4 Sports Day', 5, 13,
+                      'Wear your house colours and bring a cap, sunscreen and a water bottle. Events start at 8:30 am on the field, and parents are welcome to attend.'),
+                    P('demo-p23', 'LOW', 'Lost & Found', 'Blue water bottle found', 5, null,
+                      'A blue insulated water bottle was found near the science lab. Collect it from the general office and describe it to claim it.'),
+                    P('demo-p24', 'NORMAL', 'CCA', "Track: bring your spikes for Saturday's meet", 5, toISO(nextWeekday(6, 1)),
+                      'Athletes in the 100 m, 400 m and relay teams should bring running spikes and their CCA jersey. The bus leaves from the main gate at 7:15 am.', { cca: 'Track' }),
+                    P('demo-p25', 'LOW', 'Classroom', 'Bring art materials on Thursday', 5, toISO(nextWeekday(4, 1)),
+                      'Bring your sketchbook, pencils and a set of watercolours. We will be working on the still-life project during Art.', { level: '2', cls: 'D' }),
+                    P('demo-p26', 'LOW', 'Lost & Found', 'Found: glasses in the library', 6, null,
+                      'A pair of black-framed glasses in a grey case was left on a study desk in the library. Ask the librarian to claim them.'),
+                    P('demo-p27', 'LOW', 'Classroom', 'Homework diaries need a weekly signature', 6, null,
+                      'Please make sure a parent or guardian signs your homework diary every Friday. Form teachers will check them on Mondays.'),
+                    P('demo-p28', 'LOW', 'CCA', 'CCA attendance now taken on the school app', 6, null,
+                      'From this week, CCA attendance is recorded on the school app. Please check in with your CCA teacher-in-charge at the start of each session.'),
+                    P('demo-p29', 'NORMAL', 'CCA', 'Orchestra: concert dress code for Prize Giving', 6, 12,
+                      'Please wear black bottoms and a white top with closed black shoes. Arrive at the hall by 1:00 pm for tuning and a short sound check.', { cca: 'Orchestra' }),
+                    P('demo-p30', 'LOW', 'General', 'Library open until 6 pm during exam weeks', 7, null,
+                      'The library will stay open until 6 pm on weekdays during exam weeks. Quiet study zones are on the second floor.')
                 ];
             }
 
             function makeSampleTasks() {
+                const T = (id, title, d, done) => ({ id, title, dueDate: toISO(d), due: fmtDue(toISO(d)), done: !!done });
+                const today = startOfToday();
                 return [
-                    { id: 'sampletask1', title: 'Return library books', due: 'Fri', done: false },
-                    { id: 'sampletask2', title: 'Hand in permission slip', due: 'Thu', done: false },
-                    { id: 'sampletask3', title: 'Finish science worksheet', due: 'Next Wed', done: false }
+                    T('demo-t1', 'Return Chemistry textbook', addDays(today, -1), false),      // overdue on purpose
+                    T('demo-t2', 'Submit Geography reflection', addDays(today, -2), true),
+                    T('demo-t3', 'Bring PE kit', addDays(today, 1), false),
+                    T('demo-t4', 'Revise for Maths test', addDays(nextWeekday(1, 1), -1), false),
+                    T('demo-t5', 'Practise English oral speech', addDays(today, 3), false),
+                    T('demo-t6', 'Hand in permission slip', nextWeekday(4, 0), false),
+                    T('demo-t7', 'Return library books', nextWeekday(5, 0), false),
+                    T('demo-t8', 'Finish science worksheet', nextWeekday(3, 3), false),
+                    T('demo-t9', 'Sign up for Parent-Teacher meeting', addDays(today, 5), false)
                 ];
+            }
+
+            // older saved data only has text dates ("21 Sep", "Fri") — give it real dates for the calendar
+            function parseDayMonth(str) {
+                const m = /^\s*(\d{1,2})\s+([A-Za-z]{3})/.exec(str || '');
+                if (!m) return null;
+                const mi = MONTHS_SHORT.findIndex(x => x.toLowerCase() === m[2].toLowerCase());
+                return mi < 0 ? null : { day: +m[1], month: mi };
+            }
+            function normalizeData() {
+                let changed = false;
+                const today = startOfToday();
+                for (const a of announcements) {
+                    if (!a.dateISO) {
+                        const p = parseDayMonth(a.date);
+                        if (p) {
+                            let d = new Date(today.getFullYear(), p.month, p.day);
+                            if (d > today) d = new Date(d.getFullYear() - 1, p.month, p.day);
+                            a.dateISO = toISO(d);
+                        } else {
+                            a.dateISO = '';
+                        }
+                        changed = true;
+                    }
+                }
+                for (const t of tasks) {
+                    if (!t.dueDate && t.due) {
+                        let d = null;
+                        const p = parseDayMonth(t.due);
+                        if (p) {
+                            d = new Date(today.getFullYear(), p.month, p.day);
+                        } else {
+                            const w = /^\s*(next\s+)?(sun|mon|tue|wed|thu|fri|sat)/i.exec(t.due);
+                            if (w) {
+                                const wd = WD_SHORT.findIndex(x => x.toLowerCase() === w[2].toLowerCase());
+                                d = nextWeekday(wd, w[1] ? 7 : 0);
+                            }
+                        }
+                        if (d) { t.dueDate = toISO(d); t.due = fmtDue(t.dueDate); changed = true; }
+                    }
+                }
+                return changed;
+            }
+
+            // Adds the starter content once. First-time visitors get it; anyone still using the old
+            // 7-post / 3-task starter set gets it swapped for the richer one (their own posts are kept).
+            // If someone already cleared the starter content, it is not brought back.
+            function seedList(list, prevKeys, newKey, oldIdRe, makeFn) {
+                if (localStorage.getItem(newKey)) return { list, changed: false };
+                const hadPrev = prevKeys.some(k => !!localStorage.getItem(k));
+                localStorage.setItem(newKey, '1');
+                if (!hadPrev && list.length === 0) return { list: makeFn(), changed: true };
+                if (list.some(x => oldIdRe.test(x.id))) {
+                    return { list: list.filter(x => !oldIdRe.test(x.id)).concat(makeFn()), changed: true };
+                }
+                return { list, changed: false };
             }
 
             // ---- storage helpers (browser localStorage — data stays in this browser) ----
@@ -1396,12 +1878,10 @@
                 try {
                     const raw = localStorage.getItem('client-tasks');
                     let list = raw ? JSON.parse(raw) : [];
-                    if (!localStorage.getItem('tasks-seeded-v1')) {
-                        localStorage.setItem('tasks-seeded-v1', '1');
-                        if (list.length === 0) {
-                            list = makeSampleTasks();
-                            localStorage.setItem('client-tasks', JSON.stringify(list));
-                        }
+                    const seeded = seedList(list, ['tasks-seeded-v1'], 'tasks-seeded-v2', /^(sampletask|demo-t)\d+$/, makeSampleTasks);
+                    if (seeded.changed) {
+                        list = seeded.list;
+                        localStorage.setItem('client-tasks', JSON.stringify(list));
                     }
                     return list;
                 } catch (e) { return []; }
@@ -1428,12 +1908,10 @@
                 try {
                     const raw = localStorage.getItem('community-posts');
                     let list = raw ? JSON.parse(raw) : [];
-                    if (!localStorage.getItem('posts-seeded-v1')) {
-                        localStorage.setItem('posts-seeded-v1', '1');
-                        if (list.length === 0) {
-                            list = makeSamplePosts();
-                            localStorage.setItem('community-posts', JSON.stringify(list));
-                        }
+                    const seeded = seedList(list, ['posts-seeded-v1', 'posts-seeded-v2', 'posts-seeded-v3'], 'posts-seeded-v4', /^(sample|demo-p)\d+$/, makeSamplePosts);
+                    if (seeded.changed) {
+                        list = seeded.list;
+                        localStorage.setItem('community-posts', JSON.stringify(list));
                     }
                     return list;
                 } catch (e) { return []; }
@@ -1454,6 +1932,12 @@
             let editingPostId = null;
             let pendingDeleteId = null;
             let afterUnlock = null;     // action to run once the user unlocks
+            let viewMode = 'list';      // 'list' | 'calendar'
+            let calMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+            let calSelected = toISO(new Date());
+            let ccaFilter = '';
+            let levelFilter = '';
+            let classFilter = '';
 
             // ---- DOM refs ----
             const $ = id => document.getElementById(id);
@@ -1503,6 +1987,32 @@
             const confirmText = $('confirmText');
             const confirmNoBtn = $('confirmNoBtn');
             const confirmYesBtn = $('confirmYesBtn');
+
+            const viewListBtn = $('viewListBtn');
+            const viewCalBtn = $('viewCalBtn');
+            const calendarView = $('calendarView');
+            const calGrid = $('calGrid');
+            const calTitle = $('calTitle');
+            const calPrev = $('calPrev');
+            const calNext = $('calNext');
+            const calToday = $('calToday');
+            const dayPanel = $('dayPanel');
+            const postEventDateInput = $('postEventDate');
+            const postCcaInput = $('postCca');
+            const postLevelInput = $('postLevel');
+            const postClassInput = $('postClass');
+            const subCcaRow = $('subCcaRow');
+            const subClassroomRow = $('subClassroomRow');
+            const subFilters = $('subFilters');
+            const ccaFilterWrap = $('ccaFilterWrap');
+            const levelFilterWrap = $('levelFilterWrap');
+            const classFilterWrap = $('classFilterWrap');
+            const ccaFilterSel = $('ccaFilterSel');
+            const levelFilterSel = $('levelFilterSel');
+            const classFilterSel = $('classFilterSel');
+            const subFilterNote = $('subFilterNote');
+            const subClassHint = $('subClassHint');
+            const taskCountEl = $('taskCount');
 
             // =====================================================
             //  UNLOCK / LOCK
@@ -1692,21 +2202,31 @@
             // =====================================================
             //  TASKS (personal — always editable, no password)
             // =====================================================
+            function afterTaskChange() {
+                renderTasks();
+                renderCalendar();
+            }
+
             function renderTasks() {
+                const pending = tasks.filter(t => !t.done).length;
+                taskCountEl.textContent = tasks.length ? `(${pending})` : '';
                 if (tasks.length === 0) {
                     tasksEl.innerHTML = `<div class="task-empty">No tasks yet — tap "➕ Add" to create one.</div>`;
                     return;
                 }
 
+                const todayISO = toISO(new Date());
                 let html = '';
                 for (const t of tasks) {
                     const isDone = !!t.done;
+                    const dueText = t.dueDate ? fmtDue(t.dueDate) : (t.due || '');
+                    const overdue = !!t.dueDate && !isDone && t.dueDate < todayISO;
                     html += `
                     <div class="task-card ${isDone ? 'done' : ''}" data-task-id="${esc(t.id)}">
                         <input type="checkbox" id="chk_${esc(t.id)}" ${isDone ? 'checked' : ''} aria-label="Mark '${esc(t.title)}' as ${isDone ? 'incomplete' : 'complete'}">
                         <div class="task-info">
                             <div class="task-title">${esc(t.title)}</div>
-                            ${t.due ? `<div class="task-due">${esc(t.due)}</div>` : ''}
+                            ${dueText ? `<div class="task-due${overdue ? ' overdue' : ''}">${overdue ? 'Overdue · ' : ''}${esc(dueText)}</div>` : ''}
                         </div>
                         <div class="task-actions">
                             <button type="button" class="icon-btn edit-task-btn" aria-label="Edit task" title="Edit">
@@ -1727,8 +2247,7 @@
                         const task = tasks.find(t => t.id === id);
                         if (task) task.done = this.checked;
                         await saveTasks(tasks);
-                        card.classList.toggle('done', this.checked);
-                        this.setAttribute('aria-label', `Mark '${card.querySelector('.task-title').textContent}' as ${this.checked ? 'incomplete' : 'complete'}`);
+                        afterTaskChange();
                     });
                 });
 
@@ -1744,12 +2263,12 @@
                         const id = this.closest('.task-card').dataset.taskId;
                         tasks = tasks.filter(t => t.id !== id);
                         await saveTasks(tasks);
-                        renderTasks();
+                        afterTaskChange();
                     });
                 });
             }
 
-            function openTaskModal(taskId = null) {
+            function openTaskModal(taskId = null, presetDate = '') {
                 editingTaskId = taskId;
                 taskForm.reset();
                 taskModalError.textContent = '';
@@ -1759,9 +2278,10 @@
                     const task = tasks.find(t => t.id === taskId);
                     taskModalTitle.textContent = '📌 Edit Task';
                     taskTitleInput.value = task ? task.title : '';
-                    taskDueInput.value = task ? (task.due || '') : '';
+                    taskDueInput.value = task ? (task.dueDate || '') : '';
                 } else {
                     taskModalTitle.textContent = '📌 New Task';
+                    taskDueInput.value = presetDate || '';
                 }
 
                 taskModalOverlay.classList.add('open');
@@ -1773,14 +2293,15 @@
                 editingTaskId = null;
             }
 
-            addTaskBtn.addEventListener('click', () => openTaskModal(null));
+            addTaskBtn.addEventListener('click', () => openTaskModal(null, viewMode === 'calendar' ? calSelected : ''));
             taskModalCancelBtn.addEventListener('click', closeTaskModal);
             taskModalOverlay.addEventListener('click', function(e) { if (e.target === taskModalOverlay) closeTaskModal(); });
 
             taskForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const title = taskTitleInput.value.trim();
-                const due = taskDueInput.value.trim();
+                const dueDate = taskDueInput.value || '';
+                const due = dueDate ? fmtDue(dueDate) : '';
                 if (!title) {
                     taskModalError.textContent = 'Please enter a task.';
                     taskModalError.classList.add('show');
@@ -1789,14 +2310,14 @@
 
                 if (editingTaskId) {
                     const task = tasks.find(t => t.id === editingTaskId);
-                    if (task) { task.title = title; task.due = due; }
+                    if (task) { task.title = title; task.due = due; task.dueDate = dueDate; }
                 } else {
-                    tasks.push({ id: 'task' + Date.now(), title, due, done: false });
+                    tasks.push({ id: 'task' + Date.now(), title, due, dueDate, done: false });
                 }
 
                 await saveTasks(tasks);
                 closeTaskModal();
-                renderTasks();
+                afterTaskChange();
             });
 
             // =====================================================
@@ -1805,12 +2326,19 @@
             function getFiltered() {
                 let list = announcements;
                 if (activeTab !== 'all') list = list.filter(a => a.category === activeTab);
+                // subcategory dropdowns: show matching posts plus posts meant for everyone (left blank)
+                if (activeTab === 'CCA' && ccaFilter) list = list.filter(a => !a.cca || a.cca === ccaFilter);
+                if (activeTab === 'Classroom') {
+                    if (levelFilter) list = list.filter(a => !a.level || a.level === levelFilter);
+                    if (classFilter) list = list.filter(a => !a.cls || a.cls === classFilter);
+                }
                 if (searchQuery.trim()) {
                     const q = searchQuery.trim().toLowerCase();
                     list = list.filter(a =>
                         a.title.toLowerCase().includes(q) ||
                         a.body.toLowerCase().includes(q) ||
                         a.category.toLowerCase().includes(q) ||
+                        subSearchText(a).includes(q) ||
                         a.urgency.toLowerCase().includes(q)
                     );
                 }
@@ -1901,10 +2429,11 @@
                             <div class="top">
                                 <span class="badge ${urgencyClass}">${esc(a.urgency)}</span>
                                 <span class="badge-category">${esc(a.category)}</span>
+                                ${subLabels(a).map(l => `<span class="badge-sub">${esc(l)}</span>`).join('')}
                                 <span class="expand-icon" aria-hidden="true">▾</span>
                             </div>
                             <div class="title">${esc(a.title)}</div>
-                            <div class="date">Posted ${esc(a.date)}</div>
+                            <div class="date">Posted ${esc(a.date)}${a.eventDate ? ` · 📅 ${esc(fmtShort(a.eventDate))}` : ''}</div>
                             <div class="body">${esc(a.body)}</div>
                         </div>
                         <div class="post-side">
@@ -1965,15 +2494,213 @@
                 });
             }
 
+            // =====================================================
+            //  CALENDAR
+            // =====================================================
+            const ICON_EDIT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+            const ICON_TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>';
+            const urgencyRank = a => a.urgency === 'URGENT' ? 0 : a.urgency === 'NORMAL' ? 1 : 2;
+
+            function setView(mode) {
+                viewMode = mode === 'calendar' ? 'calendar' : 'list';
+                try { localStorage.setItem('nb-view', viewMode); } catch (e) { /* ignore */ }
+                const cal = viewMode === 'calendar';
+                feedEl.hidden = cal;
+                calendarView.hidden = !cal;
+                viewListBtn.classList.toggle('active', !cal);
+                viewCalBtn.classList.toggle('active', cal);
+                viewListBtn.setAttribute('aria-selected', cal ? 'false' : 'true');
+                viewCalBtn.setAttribute('aria-selected', cal ? 'true' : 'false');
+                if (cal) renderCalendar();
+            }
+
+            // posts appear on their event date, or on the day they were posted if none is set
+            function calendarMaps() {
+                const postMap = {};
+                const taskMap = {};
+                for (const a of getFiltered()) {
+                    const key = a.eventDate || a.dateISO;
+                    if (key) (postMap[key] = postMap[key] || []).push(a);
+                }
+                for (const t of tasks) {
+                    if (t.dueDate) (taskMap[t.dueDate] = taskMap[t.dueDate] || []).push(t);
+                }
+                for (const k in postMap) postMap[k].sort((x, y) => urgencyRank(x) - urgencyRank(y));
+                return { postMap, taskMap };
+            }
+
+            function renderCalendar() {
+                if (!calGrid) return;
+                const y = calMonth.getFullYear();
+                const m = calMonth.getMonth();
+                calTitle.textContent = `${MONTHS_FULL[m]} ${y}`;
+
+                const { postMap, taskMap } = calendarMaps();
+                const first = new Date(y, m, 1);
+                const lead = (first.getDay() + 6) % 7;             // weeks start on Monday
+                const daysInMonth = new Date(y, m + 1, 0).getDate();
+                const weeks = Math.ceil((lead + daysInMonth) / 7);
+                const start = addDays(first, -lead);
+                const todayISO = toISO(new Date());
+
+                let html = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(n => `<div class="cal-dow">${n}</div>`).join('');
+                for (let i = 0; i < weeks * 7; i++) {
+                    const d = addDays(start, i);
+                    const iso = toISO(d);
+                    const posts = postMap[iso] || [];
+                    const ts = taskMap[iso] || [];
+
+                    const kinds = [];
+                    posts.forEach(a => kinds.push(a.urgency === 'URGENT' ? 'u' : a.urgency === 'NORMAL' ? 'n' : 'l'));
+                    ts.forEach(t => kinds.push(t.done ? 't done' : 't'));
+                    const shown = kinds.slice(0, 4).map(k => `<i class="dot ${k}"></i>`).join('');
+                    const more = kinds.length > 4 ? `<b class="more">+${kinds.length - 4}</b>` : '';
+
+                    const label = `${fmtLong(iso)}: ${posts.length} announcement${posts.length === 1 ? '' : 's'}, ${ts.length} task${ts.length === 1 ? '' : 's'}`;
+                    html += `<button type="button" class="cal-cell${d.getMonth() !== m ? ' other' : ''}${iso === todayISO ? ' today' : ''}${iso === calSelected ? ' selected' : ''}" data-date="${iso}" aria-label="${esc(label)}" aria-pressed="${iso === calSelected}">` +
+                        `<span class="cal-num">${d.getDate()}</span><span class="cal-dots">${shown}${more}</span></button>`;
+                }
+                calGrid.innerHTML = html;
+                renderDayPanel(postMap, taskMap);
+            }
+
+            function renderDayPanel(postMap, taskMap) {
+                if (!postMap) ({ postMap, taskMap } = calendarMaps());
+                const posts = postMap[calSelected] || [];
+                const ts = taskMap[calSelected] || [];
+
+                let html = `<div class="day-head"><h3>${esc(fmtLong(calSelected))}</h3>
+                    <div class="day-actions">
+                        <button type="button" class="add-task-btn" data-action="add-task">➕ Task</button>
+                        <button type="button" class="add-task-btn admin-only" data-action="add-post">➕ Post</button>
+                    </div></div>`;
+
+                if (!posts.length && !ts.length) html += `<div class="day-empty">Nothing on this day.</div>`;
+
+                if (posts.length) {
+                    html += `<div class="day-section-label">Announcements</div>`;
+                    for (const a of posts) {
+                        const cls = a.urgency === 'URGENT' ? 'badge-urgent' : a.urgency === 'NORMAL' ? 'badge-normal' : 'badge-low';
+                        html += `<div class="day-item" data-post-id="${esc(a.id)}">
+                            <div class="main">
+                                <div class="top"><span class="badge ${cls}">${esc(a.urgency)}</span><span class="badge-category">${esc(a.category)}</span>${subLabels(a).map(l => `<span class="badge-sub">${esc(l)}</span>`).join('')}<span class="day-kind">${a.eventDate ? '📅 Event' : 'Posted'}</span></div>
+                                <div class="title">${esc(a.title)}</div>
+                                <div class="dbody">${esc(a.body)}</div>
+                            </div>
+                            <div class="item-actions admin-only">
+                                <button type="button" class="icon-btn" data-action="edit-post" aria-label="Edit post" title="Edit">${ICON_EDIT}</button>
+                                <button type="button" class="icon-btn delete" data-action="delete-post" aria-label="Delete post" title="Delete">${ICON_TRASH}</button>
+                            </div>
+                        </div>`;
+                    }
+                }
+
+                if (ts.length) {
+                    html += `<div class="day-section-label">Tasks</div>`;
+                    for (const t of ts) {
+                        html += `<div class="day-item task${t.done ? ' done' : ''}" data-task-id="${esc(t.id)}">
+                            <input type="checkbox" class="day-check" data-action="toggle-task" ${t.done ? 'checked' : ''} aria-label="Mark '${esc(t.title)}' as ${t.done ? 'incomplete' : 'complete'}">
+                            <div class="main"><div class="title">${esc(t.title)}</div></div>
+                            <div class="item-actions">
+                                <button type="button" class="icon-btn" data-action="edit-task" aria-label="Edit task" title="Edit">${ICON_EDIT}</button>
+                                <button type="button" class="icon-btn delete" data-action="delete-task" aria-label="Delete task" title="Delete">${ICON_TRASH}</button>
+                            </div>
+                        </div>`;
+                    }
+                }
+                dayPanel.innerHTML = html;
+            }
+
+            function selectDate(iso, focus = false) {
+                const d = fromISO(iso);
+                if (!d) return;
+                calSelected = iso;
+                if (d.getMonth() !== calMonth.getMonth() || d.getFullYear() !== calMonth.getFullYear()) {
+                    calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+                }
+                renderCalendar();
+                if (focus) {
+                    const cell = calGrid.querySelector(`.cal-cell[data-date="${iso}"]`);
+                    if (cell) cell.focus();
+                }
+            }
+
+            function goMonth(delta) {
+                calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + delta, 1);
+                const t = new Date();
+                const isThisMonth = calMonth.getFullYear() === t.getFullYear() && calMonth.getMonth() === t.getMonth();
+                calSelected = isThisMonth ? toISO(t) : toISO(calMonth);
+                renderCalendar();
+            }
+
+            function goToday() {
+                const t = new Date();
+                calMonth = new Date(t.getFullYear(), t.getMonth(), 1);
+                calSelected = toISO(t);
+                renderCalendar();
+            }
+
+            calGrid.addEventListener('click', function(e) {
+                const cell = e.target.closest('.cal-cell');
+                if (cell) selectDate(cell.dataset.date);
+            });
+            calGrid.addEventListener('keydown', function(e) {
+                const cell = e.target.closest('.cal-cell');
+                const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+                if (!cell || !step) return;
+                e.preventDefault();
+                selectDate(toISO(addDays(fromISO(cell.dataset.date), step)), true);
+            });
+
+            dayPanel.addEventListener('click', async function(e) {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+                const item = btn.closest('.day-item');
+                if (action === 'add-task') {
+                    openTaskModal(null, calSelected);
+                } else if (action === 'add-post') {
+                    requireUnlock(() => openNewPostModal(calSelected));
+                } else if (action === 'edit-task' && item) {
+                    openTaskModal(item.dataset.taskId);
+                } else if (action === 'delete-task' && item) {
+                    tasks = tasks.filter(t => t.id !== item.dataset.taskId);
+                    await saveTasks(tasks);
+                    afterTaskChange();
+                } else if (action === 'edit-post' && item) {
+                    const id = item.dataset.postId;
+                    requireUnlock(() => openPostModal(id));
+                } else if (action === 'delete-post' && item) {
+                    askDeletePost(item.dataset.postId);
+                }
+            });
+            dayPanel.addEventListener('change', async function(e) {
+                const cb = e.target.closest('[data-action="toggle-task"]');
+                const item = cb && cb.closest('.day-item');
+                if (!cb || !item) return;
+                const task = tasks.find(t => t.id === item.dataset.taskId);
+                if (task) task.done = cb.checked;
+                await saveTasks(tasks);
+                afterTaskChange();
+            });
+
+            viewListBtn.addEventListener('click', () => setView('list'));
+            viewCalBtn.addEventListener('click', () => setView('calendar'));
+            calPrev.addEventListener('click', () => goMonth(-1));
+            calNext.addEventListener('click', () => goMonth(1));
+            calToday.addEventListener('click', goToday);
+
             function refresh() {
                 renderTasks();
                 updateUrgentBanner();
                 renderFeed();
+                renderCalendar();
             }
 
             function scrollToUrgent() {
                 const targetId = urgentBanner.dataset.targetId;
                 if (!targetId) return;
+                if (viewMode !== 'list') setView('list');
                 let urgentCard = feedEl.querySelector(`.announce-card[data-id="${targetId}"]`);
                 if (!urgentCard) {
                     // hidden by the current tab or search — clear both so it can be shown
@@ -1993,6 +2720,45 @@
                 setTimeout(() => urgentCard.classList.remove('pulse-target'), 2000);
             }
 
+            function updateSubFilters() {
+                const isCca = activeTab === 'CCA';
+                const isRoom = activeTab === 'Classroom';
+                subFilters.hidden = !(isCca || isRoom);
+                ccaFilterWrap.hidden = !isCca;
+                levelFilterWrap.hidden = !isRoom;
+                classFilterWrap.hidden = !isRoom;
+                let note = '';
+                if (isCca && ccaFilter) note = `Showing ${ccaFilter} plus posts meant for all CCAs.`;
+                if (isRoom && (levelFilter || classFilter)) {
+                    const code = levelFilter && classFilter ? levelFilter + classFilter : levelFilter ? 'Level ' + levelFilter : 'Class ' + classFilter;
+                    note = `Showing ${code} plus posts meant for everyone.`;
+                }
+                subFilterNote.textContent = note;
+                subFilterNote.hidden = !note;
+            }
+
+            function onSubFilterChange() {
+                ccaFilter = ccaFilterSel.value;
+                levelFilter = levelFilterSel.value;
+                classFilter = classFilterSel.value;
+                updateSubFilters();
+                renderFeed();
+                renderCalendar();
+            }
+
+            // in the post form, show the CCA dropdown for CCA posts and Level + Class for Classroom posts
+            function updateSubRows() {
+                subCcaRow.hidden = postCategoryInput.value !== 'CCA';
+                subClassroomRow.hidden = postCategoryInput.value !== 'Classroom';
+                updateClassHint();
+            }
+
+            function updateClassHint() {
+                const show = postCategoryInput.value === 'Classroom';
+                subClassHint.hidden = !show;
+                if (show) subClassHint.textContent = classDescription(postLevelInput.value, postClassInput.value);
+            }
+
             function setTab(tab) {
                 activeTab = tab;
                 tabBtns.forEach(btn => {
@@ -2000,7 +2766,9 @@
                     btn.classList.toggle('active', isActive);
                     btn.setAttribute('aria-selected', isActive);
                 });
+                updateSubFilters();
                 renderFeed();
+                renderCalendar();
             }
 
             // =====================================================
@@ -2016,11 +2784,17 @@
                 modalError.classList.remove('show');
             }
 
-            function openNewPostModal() {
+            function openNewPostModal(presetDate = '') {
                 editingPostId = null;
                 postForm.reset();
                 clearModalError();
                 modalTitleEl.textContent = '📋 New Announcement';
+                postEventDateInput.value = presetDate || '';
+                if (activeTab !== 'all') postCategoryInput.value = activeTab;
+                postCcaInput.value = activeTab === 'CCA' ? ccaFilter : '';
+                postLevelInput.value = activeTab === 'Classroom' ? levelFilter : '';
+                postClassInput.value = activeTab === 'Classroom' ? classFilter : '';
+                updateSubRows();
                 modalSubmitBtn.textContent = 'Post';
                 modalOverlay.classList.add('open');
                 postTitleInput.focus();
@@ -2038,6 +2812,11 @@
                 postCategoryInput.value = post.category;
                 postTitleInput.value = post.title;
                 postBodyInput.value = post.body;
+                postEventDateInput.value = post.eventDate || '';
+                postCcaInput.value = post.cca || '';
+                postLevelInput.value = post.level || '';
+                postClassInput.value = post.cls || '';
+                updateSubRows();
                 modalOverlay.classList.add('open');
                 postTitleInput.focus();
             }
@@ -2047,7 +2826,7 @@
                 editingPostId = null;
             }
 
-            newPostBtn.addEventListener('click', () => requireUnlock(openNewPostModal));
+            newPostBtn.addEventListener('click', () => requireUnlock(() => openNewPostModal(viewMode === 'calendar' ? calSelected : '')));
             modalCancelBtn.addEventListener('click', closeModal);
             modalOverlay.addEventListener('click', function(e) { if (e.target === modalOverlay) closeModal(); });
 
@@ -2071,6 +2850,12 @@
 
                 const title = postTitleInput.value.trim();
                 const body = postBodyInput.value.trim();
+                const eventDate = postEventDateInput.value || '';
+                const isCcaPost = postCategoryInput.value === 'CCA';
+                const isRoomPost = postCategoryInput.value === 'Classroom';
+                const cca = isCcaPost ? postCcaInput.value : '';
+                const level = isRoomPost ? postLevelInput.value : '';
+                const cls = isRoomPost ? postClassInput.value : '';
                 if (!title || !body) {
                     showModalError('Please fill in both a title and details.');
                     return;
@@ -2089,6 +2874,10 @@
                         post.category = postCategoryInput.value;
                         post.title = title;
                         post.body = body;
+                        post.eventDate = eventDate;
+                        post.cca = cca;
+                        post.level = level;
+                        post.cls = cls;
                     }
                     ok = await savePosts(announcements);
                     if (!ok && post && backup) Object.assign(post, backup);
@@ -2099,6 +2888,11 @@
                         category: postCategoryInput.value,
                         title: title,
                         date: formatToday(),
+                        dateISO: toISO(new Date()),
+                        eventDate: eventDate,
+                        cca: cca,
+                        level: level,
+                        cls: cls,
                         body: body
                     };
                     announcements.unshift(newPost);
@@ -2120,19 +2914,37 @@
 
             // ---- other bindings ----
             tabBtns.forEach(btn => btn.addEventListener('click', function() { setTab(this.dataset.tab); }));
-            searchInput.addEventListener('input', function() { searchQuery = this.value; renderFeed(); });
+            searchInput.addEventListener('input', function() { searchQuery = this.value; renderFeed(); renderCalendar(); });
             urgentMain.addEventListener('click', scrollToUrgent);
             urgentMain.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToUrgent(); }
             });
 
+            postCategoryInput.addEventListener('change', updateSubRows);
+            postLevelInput.addEventListener('change', updateClassHint);
+            postClassInput.addEventListener('change', updateClassHint);
+            [ccaFilterSel, levelFilterSel, classFilterSel].forEach(sel => sel.addEventListener('change', onSubFilterChange));
+
             // ---- init ----
             async function init() {
+                fillSelect(postCcaInput, 'All CCAs', CCA_OPTIONS);
+                fillSelect(postLevelInput, 'All levels', LEVEL_OPTIONS, v => 'Level ' + v);
+                fillSelect(postClassInput, 'All classes', CLASS_OPTIONS, v => 'Class ' + v);
+                fillSelect(ccaFilterSel, 'All CCAs', CCA_OPTIONS);
+                fillSelect(levelFilterSel, 'All levels', LEVEL_OPTIONS, v => 'Level ' + v);
+                fillSelect(classFilterSel, 'All classes', CLASS_OPTIONS, v => 'Class ' + v);
                 tasks = await loadTasks();
                 postDoneState = await loadPostDoneState();
                 announcements = await loadPosts();
+                if (normalizeData()) {
+                    await saveTasks(tasks);
+                    await savePosts(announcements);
+                }
                 applyLockState();
                 refresh();
+                let saved = 'list';
+                try { saved = localStorage.getItem('nb-view') || 'list'; } catch (e) { /* ignore */ }
+                setView(saved);
             }
 
             init();
